@@ -27,46 +27,51 @@ def read_data(path):
     df = df.dropna(subset=num_cols + cat_cols + [target_col])
 
     # Extraction des features numériques
-    numerical = df[num_cols].to_numpy()
+    X_num = df[num_cols].to_numpy().astype('float32')
 
-    # Encodage OneHot séparé pour chaque variable catégorielle
-    ohe = sklearn.preprocessing.OneHotEncoder(sparse=False, handle_unknown='ignore')
-    cat_encoded_list = []
-    cat_cardinalities = []
-    for col in cat_cols:
-        encoded = ohe.fit_transform(df[[col]])
-        cat_encoded_list.append(encoded)
-        cat_cardinalities.append(len(ohe.categories_[0]))
-    categorical = np.concatenate(cat_encoded_list, axis=1)
-
-    # Concaténation des features numériques et catégorielles encodées
-    encoded_data = np.concatenate((numerical, categorical), axis=-1)
+    # Encodage des variables catégorielles en indices entiers (OrdinalEncoder)
+    ord_enc = sklearn.preprocessing.OrdinalEncoder()
+    X_cat = ord_enc.fit_transform(df[cat_cols]).astype('int64')
+    cat_cardinalities = [len(categories) for categories in ord_enc.categories_]
 
     # Encodage de la cible
     label = df[target_col].map({'Yes': 1, 'No': 0}).astype(int).to_numpy()
 
-    X_all = encoded_data.astype('float32')
     y_all = label.astype('int64')
 
-    return X_all, y_all, cat_cardinalities
+    return X_num, X_cat, y_all, cat_cardinalities
 
 def get_data(seed):
-    X_all, y_all, cat_cardinalities = read_data('./data/Telco_Customer_Churn.csv')
-    X = {}
-    y = {}
-    X['train'], X['test'], y['train'], y['test'] = sklearn.model_selection.train_test_split(
-        X_all, y_all, train_size=0.8, random_state=seed
+    X_num, X_cat, y_all, cat_cardinalities = read_data('./data/Telco_Customer_Churn.csv')
+    X_num_train, X_num_test, X_cat_train, X_cat_test, y_train, y_test = sklearn.model_selection.train_test_split(
+        X_num, X_cat, y_all, train_size=0.8, random_state=seed
     )
-    X['train'], X['val'], y['train'], y['val'] = sklearn.model_selection.train_test_split(
-        X['train'], y['train'], train_size=0.85, random_state=0
+    X_num_train, X_num_val, X_cat_train, X_cat_val, y_train, y_val = sklearn.model_selection.train_test_split(
+        X_num_train, X_cat_train, y_train, train_size=0.85, random_state=0
     )
-    print(len(y['train']), len(y['val']), len(y['test']))
 
-    preprocess = sklearn.preprocessing.StandardScaler().fit(X['train'])
+    preprocess = sklearn.preprocessing.StandardScaler().fit(X_num_train)
+    X_num_train = torch.tensor(preprocess.transform(X_num_train), device=device)
+    X_num_val = torch.tensor(preprocess.transform(X_num_val), device=device)
+    X_num_test = torch.tensor(preprocess.transform(X_num_test), device=device)
+
+    X_cat_train = torch.tensor(X_cat_train, device=device)
+    X_cat_val = torch.tensor(X_cat_val, device=device)
+    X_cat_test = torch.tensor(X_cat_test, device=device)
+
+    y_train = torch.tensor(y_train, device=device)
+    y_val = torch.tensor(y_val, device=device)
+    y_test = torch.tensor(y_test, device=device)
+
     X = {
-        k: torch.tensor(preprocess.transform(v), device=device)
-        for k, v in X.items()
+        'train': (X_num_train, X_cat_train),
+        'val': (X_num_val, X_cat_val),
+        'test': (X_num_test, X_cat_test)
     }
-    y = {k: torch.tensor(v, device=device) for k, v in y.items()}
+    y = {
+        'train': y_train,
+        'val': y_val,
+        'test': y_test
+    }
 
-    return X, y, X_all, y_all, cat_cardinalities
+    return X, y, cat_cardinalities
