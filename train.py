@@ -1,12 +1,10 @@
-
 import rtdl
 import zero
-from data.process_data import device, get_data
+from data.process_telecom_data import device, get_data
 from train_funct import train, val, evaluate
 import numpy as np 
 import time 
 import torch
-
 
 if __name__ == '__main__':
     # Params
@@ -14,18 +12,19 @@ if __name__ == '__main__':
     lr = 0.001
     weight_decay = 0.0
     batch_size = 64
-    n_epochs= 50
+    n_epochs = 50
     seed = 0
 
-     # Load data
-    X, y, X_all, y_all = get_data(seed)
+    # Load data
+    X, y, X_all, y_all, cat_cardinalities = get_data(seed)
+
     train_loader = zero.data.IndexLoader(len(X['train']), batch_size, device=device)
-    val_loader = zero.data.IndexLoader(len(X['val']),batch_size, device=device)
+    val_loader = zero.data.IndexLoader(len(X['val']), batch_size, device=device)
 
     # Model 
     model = rtdl.FTTransformer.make_default(
-        n_num_features=X_all.shape[1],
-        cat_cardinalities=None,
+        n_num_features=X_all.shape[1] - sum(cat_cardinalities) if cat_cardinalities else X_all.shape[1],
+        cat_cardinalities=cat_cardinalities if cat_cardinalities else None,
         last_layer_query_idx=[-1],  # it makes the model faster and does NOT affect its output
         d_out=d_out,
     )
@@ -35,8 +34,7 @@ if __name__ == '__main__':
         if isinstance(model, rtdl.FTTransformer)
         else torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     )
-    loss_fn =   torch.nn.BCELoss()
-   
+    loss_fn = torch.nn.BCELoss()
 
     # Training 
     train_loss_list = []
@@ -44,15 +42,12 @@ if __name__ == '__main__':
     val_loss_check = 10
     for epoch in range(n_epochs):
         start = time.time()
-        loss_train =  train(epoch, model, optimizer,X, y, train_loader, loss_fn)
-        loss_val   =  val(epoch, model, X, y, val_loader, loss_fn)
+        loss_train = train(epoch, model, optimizer, X, y, train_loader, loss_fn)
+        loss_val = val(epoch, model, X, y, val_loader, loss_fn)
         train_loss_list.append(loss_train)
         val_loss_list.append(loss_val)
         if loss_val <= val_loss_check:
             print(' <<< BEST VALIDATION EPOCH')
             start = time.time()
-            matrix = evaluate(model, 'test',X, y, seed)
+            matrix = evaluate(model, 'test', X, y, seed)
             val_loss_check = loss_val
-
-    
-
