@@ -30,7 +30,7 @@ def read_data(path):
     X_num = df[num_cols].to_numpy().astype('float32')
 
     # Encodage des variables catégorielles en indices entiers (OrdinalEncoder)
-    ord_enc = sklearn.preprocessing.OrdinalEncoder()
+    ord_enc = sklearn.preprocessing.OrdinalEncoder(sparse_output=False)
     X_cat = ord_enc.fit_transform(df[cat_cols]).astype('int64')
     cat_cardinalities = [len(categories) for categories in ord_enc.categories_]
 
