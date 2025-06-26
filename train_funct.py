@@ -3,80 +3,97 @@ import zero
 import torch
 import numpy as np
 
-def apply_model(model, x_num, x_cat):
-    """
-    Fonction qui applique le modèle avec les données numériques et catégorielles
-    """
+def apply_model(model, x_num, x_cat=None):
+    """Applique le modèle aux données d'entrée"""
     return model(x_num, x_cat)
-
-sigmoid = torch.nn.Sigmoid()
 
 @torch.no_grad()
 def evaluate(model, part, X, y, seed):
+    """Évalue le modèle sur un ensemble de données"""
     model.eval()
     prediction = []
-    x_num, x_cat = X[part]
     
-    for batch_idx in zero.iter_batches(range(int(y[part].size(0))), 1024):
-        # CORRECTION : Convertir batch_idx en liste d'entiers Python
-        if isinstance(batch_idx, torch.Tensor):
-            batch_idx = batch_idx.cpu().numpy().tolist()
-        
-        batch_x_num = x_num[batch_idx]
-        batch_x_cat = x_cat[batch_idx]
-        # Appliquer sigmoid seulement pour l'évaluation (pas pendant l'entraînement)
-        output = sigmoid(apply_model(model, batch_x_num, batch_x_cat).squeeze(1))
-        prediction.append(output)
+    for batch in zero.iter_batches(X[part], 1024):
+        x_num_batch, x_cat_batch = batch
+        # Pas de sigmoid ici car BCEWithLogitsLoss l'applique déjà
+        output = apply_model(model, x_num_batch, x_cat_batch).squeeze(1)
+        # Appliquer sigmoid seulement pour les prédictions finales
+        prediction.append(torch.sigmoid(output))
     
     prediction = torch.cat(prediction).cpu().numpy()
     target = y[part].cpu().numpy()
     
+    # Optionnel: sauvegarder les prédictions
+    # np.save(f'./outputs/seed_{seed}/probs.npy', prediction)
+    # np.save(f'./outputs/seed_{seed}/labels.npy', target)
+    
     roc_auc, pr_auc, acc, ba, mcc, sensitivity, specificity, precision, f1, ck = performance(
-        target, prediction, threshold=0.5
+        target, prediction, thresold=0.5
     )
     test_performance = [roc_auc, pr_auc, acc, ba, mcc, sensitivity, specificity, precision, f1, ck]
+    
+    print(f'{part.capitalize()} Performance:')
+    print(f'  ROC-AUC: {roc_auc:.4f} | PR-AUC: {pr_auc:.4f} | Accuracy: {acc:.4f}')
+    print(f'  F1: {f1:.4f} | MCC: {mcc:.4f} | Balanced Acc: {ba:.4f}')
+    
     return test_performance
 
 def train(epoch, model, optimizer, X, y, train_loader, loss_fn):
+    """Entraîne le modèle pour une époque"""
     model.train()
-    loss_train = 0
-    x_num, x_cat = X['train']
+    total_loss = 0
+    num_batches = 0
     
     for iteration, batch_idx in enumerate(train_loader):
         optimizer.zero_grad()
         
-        batch_x_num = x_num[batch_idx]
-        batch_x_cat = x_cat[batch_idx]
+        # Récupérer les données du batch
+        x_num_batch = X['train'][0][batch_idx]
+        x_cat_batch = X['train'][1][batch_idx]
         y_batch = y['train'][batch_idx].float()
         
-        # IMPORTANT: Passer les deux arguments séparément
-        output = apply_model(model, batch_x_num, batch_x_cat).squeeze(1)
+        # Forward pass - PAS de sigmoid car BCEWithLogitsLoss l'applique
+        output = apply_model(model, x_num_batch, x_cat_batch).squeeze(1)
+        
+        # Calcul de la perte
         loss = loss_fn(output, y_batch)
         
+        # Backward pass
         loss.backward()
         optimizer.step()
-        loss_train += loss.item()
+        
+        total_loss += loss.item()
+        num_batches += 1
+        
+        # Affichage optionnel du progrès
+        if iteration % 50 == 0:
+            print(f'  Batch {iteration:3d} | Loss: {loss.item():.4f}')
     
-    loss_train = loss_train / len(train_loader)
-    print(f'Epoch {epoch:03d} | Training loss: {loss_train:.4f}')
-    return loss_train
+    avg_loss = total_loss / num_batches
+    print(f'Epoch {epoch:03d} | Training loss: {avg_loss:.4f}')
+    return avg_loss
 
 def val(epoch, model, X, y, val_loader, loss_fn):
+    """Valide le modèle pour une époque"""
     model.eval()
-    loss_val = 0
-    x_num, x_cat = X['val']
+    total_loss = 0
+    num_batches = 0
     
-    with torch.no_grad():  # Ajout du no_grad pour la validation
+    with torch.no_grad():  # Important pour la validation
         for iteration, batch_idx in enumerate(val_loader):
-            batch_x_num = x_num[batch_idx]
-            batch_x_cat = x_cat[batch_idx]
+            # Récupérer les données du batch
+            x_num_batch = X['val'][0][batch_idx]
+            x_cat_batch = X['val'][1][batch_idx]
             y_batch = y['val'][batch_idx].float()
             
-            # IMPORTANT: Passer les deux arguments séparément
-            output = apply_model(model, batch_x_num, batch_x_cat).squeeze(1)
+            # Forward pass - PAS de sigmoid car BCEWithLogitsLoss l'applique
+            output = apply_model(model, x_num_batch, x_cat_batch).squeeze(1)
+            
+            # Calcul de la perte
             loss = loss_fn(output, y_batch)
-            loss_val += loss.item()
+            total_loss += loss.item()
+            num_batches += 1
     
-    loss_val = loss_val / len(val_loader)
-    print(f'Epoch {epoch:03d} | Validation loss: {loss_val:.4f}')
-    return loss_val
+    avg_loss = total_loss / num_batches
+    print(f'Epoch {epoch:03d} | Validation loss: {avg_loss:.4f}')
+    return avg_loss
