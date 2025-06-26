@@ -65,9 +65,9 @@ def train(epoch, model, optimizer, X, y, train_loader, loss_fn):
         total_loss += loss.item()
         num_batches += 1
         
-        # Affichage optionnel du progrès
-        if iteration % 50 == 0:
-            print(f'  Batch {iteration:3d} | Loss: {loss.item():.4f}')
+        # Affichage optionnel du progrès (commenté pour réduire le bruit)
+        # if iteration % 50 == 0:
+        #     print(f'  Batch {iteration:3d} | Loss: {loss.item():.4f}')
     
     avg_loss = total_loss / num_batches
     print(f'Epoch {epoch:03d} | Training loss: {avg_loss:.4f}')

@@ -32,7 +32,6 @@ if __name__ == '__main__':
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
     
     print(f"Nombre de features numériques: {X['train'][0].shape[1]}")
-    print(f"Cardinalités catégorielles: {cat_cardinalities}")
     
     # Modèle
     model = rtdl.FTTransformer.make_default(
