@@ -17,7 +17,7 @@ def evaluate(model, part, X, y, seed):
     prediction = []
     x_num, x_cat = X[part]
     
-    for batch_idx in zero.iter_batches(range(len(y[part])), 1024):
+    for batch_idx in zero.iter_batches(range(y[part].size(0)), 1024):
         batch_x_num = x_num[batch_idx]
         batch_x_cat = x_cat[batch_idx]
         # Appliquer sigmoid seulement pour l'évaluation (pas pendant l'entraînement)
