@@ -31,8 +31,6 @@ if __name__ == '__main__':
     train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
     
-    print(f"Nombre de features numériques: {X['train'][0].shape[1]}")
-    
     # Modèle
     model = rtdl.FTTransformer.make_default(
         n_num_features=X['train'][0].shape[1],

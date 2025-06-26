@@ -38,11 +38,14 @@ def read_data(path):
     X_num = df_clean[num_cols].to_numpy().astype('float32')
     
     # Encodage des variables catégorielles en indices entiers (OrdinalEncoder)
-    # Pas de paramètre sparse_output pour les anciennes versions
     ord_enc = sklearn.preprocessing.OrdinalEncoder()
     X_cat = ord_enc.fit_transform(df_clean[cat_cols]).astype('int64')
     cat_cardinalities = [len(categories) for categories in ord_enc.categories_]
     
+    # Affichage des informations sur les features
+    print(f"\nInformations sur les features:")
+    print(f"Features numériques ({len(num_cols)}): {num_cols}")
+    print(f"Variables catégorielles ({len(cat_cols)}): {cat_cols}")
     print(f"Cardinalités des variables catégorielles: {cat_cardinalities}")
     
     # Encodage de la cible
