@@ -34,7 +34,7 @@ if __name__ == '__main__':
         if isinstance(model, rtdl.FTTransformer)
         else torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     )
-    loss_fn = torch.nn.BCELoss()
+    loss_fn = torch.nn.BCEWithLogitsLoss()
 
     # Training 
     train_loss_list = []
