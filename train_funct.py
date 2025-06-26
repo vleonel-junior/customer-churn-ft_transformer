@@ -18,6 +18,10 @@ def evaluate(model, part, X, y, seed):
     x_num, x_cat = X[part]
     
     for batch_idx in zero.iter_batches(range(int(y[part].size(0))), 1024):
+        # CORRECTION : Convertir batch_idx en liste d'entiers Python
+        if isinstance(batch_idx, torch.Tensor):
+            batch_idx = batch_idx.cpu().numpy().tolist()
+        
         batch_x_num = x_num[batch_idx]
         batch_x_cat = x_cat[batch_idx]
         # Appliquer sigmoid seulement pour l'évaluation (pas pendant l'entraînement)
@@ -27,12 +31,8 @@ def evaluate(model, part, X, y, seed):
     prediction = torch.cat(prediction).cpu().numpy()
     target = y[part].cpu().numpy()
     
-    # Optionnel : sauvegarder les prédictions
-    # np.save(f'./outputs/seed_{seed}/probs.npy', prediction)
-    # np.save(f'./outputs/seed_{seed}/labels.npy', target)
-    
     roc_auc, pr_auc, acc, ba, mcc, sensitivity, specificity, precision, f1, ck = performance(
-        target, prediction, threshold=0.5  # Correction du typo
+        target, prediction, threshold=0.5
     )
     test_performance = [roc_auc, pr_auc, acc, ba, mcc, sensitivity, specificity, precision, f1, ck]
     return test_performance
