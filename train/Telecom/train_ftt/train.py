@@ -32,12 +32,22 @@ if __name__ == '__main__':
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
     
     # Modèle
+    from num_embedding_factory import get_num_embedding
+
+    # Embedding numérique personnalisé : P-LR
+    num_embedding = get_num_embedding(
+        "P-LR",
+        X['train'][0],
+        d_embedding=16  # à ajuster selon ton besoin
+    )
+
     model = rtdl.FTTransformer.make_default(
         n_num_features=X['train'][0].shape[1],
         cat_cardinalities=cat_cardinalities,
         last_layer_query_idx=[-1],  # Optimisation
         d_out=d_out,
     )
+    model.feature_tokenizer.num_tokenizer = num_embedding
     model.to(device)
     
     # Optimiseur
