@@ -12,6 +12,8 @@ from rtdl.rtdl.data import (
     compute_decision_tree_bin_edges,
 )
 import torch.nn as nn
+import torch
+import numpy as np
 
 
 def get_num_embedding(
@@ -43,6 +45,12 @@ def get_num_embedding(
         P-LR      : Periodic → NLinear → ReLU
         P-LR-LR   : Periodic → NLinear → ReLU → NLinear → ReLU
     """
+    # Conversion numpy → tensor si nécessaire
+    if isinstance(X_train, np.ndarray):
+        X_train = torch.tensor(X_train, dtype=torch.float32)
+    if y_train is not None and isinstance(y_train, np.ndarray):
+        y_train = torch.tensor(y_train, dtype=torch.long)
+    
     n_features = X_train.shape[1]
 
     # ------ Linear + ReLU ------
@@ -95,7 +103,13 @@ def get_num_embedding(
     # ------ Tree-based PLE ------
     if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR"):
         assert y_train is not None, "y_train requis pour PLE arbre"
-        edges = compute_decision_tree_bin_edges(X_train, n_bins=n_bins, y=y_train)
+        edges = compute_decision_tree_bin_edges(
+            X_train, 
+            n_bins=n_bins, 
+            y=y_train,
+            regression=False,
+            tree_kwargs={'max_depth': 5, 'min_samples_leaf': 20}
+        )
         ple = PiecewiseLinearEncoder(edges, stack=True)
         if embedding_type == "T":
             return ple
@@ -121,10 +135,15 @@ def get_num_embedding(
 
     # ------ Periodic ------
     if embedding_type in ("P", "P-L", "P-LR", "P-LR-LR"):
-        assert d_periodic_embedding is not None, "d_periodic_embedding requis"
+        if d_periodic_embedding is None:
+            d_periodic_embedding = d_embedding  # Fix dimension issue
         pe = PeriodicEmbeddings(n_features, d_periodic_embedding, sigma)
         if embedding_type == "P":
-            return pe
+            # Force correct output dimension
+            return nn.Sequential(
+                pe,
+                NLinear(n_features, d_periodic_embedding, d_embedding),
+            )
         if embedding_type == "P-L":
             return nn.Sequential(
                 pe,
