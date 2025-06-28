@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     # Embedding numérique personnalisé : P-LR-LR
     num_embedding = get_num_embedding(
-        "P-LR-lR",
+        "P-LR-LR",
         X['train'][0],
         d_embedding=16  # à ajuster selon ton besoin
     )
