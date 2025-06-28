@@ -34,9 +34,9 @@ if __name__ == '__main__':
     # Modèle
     from num_embedding_factory import get_num_embedding
 
-    # Embedding numérique personnalisé : P-LR-LR
+    # Embedding numérique personnalisé : P-LR
     num_embedding = get_num_embedding(
-        "P-LR-LR",
+        "P-LR",
         X['train'][0],
         d_embedding=16  # à ajuster selon ton besoin
     )
