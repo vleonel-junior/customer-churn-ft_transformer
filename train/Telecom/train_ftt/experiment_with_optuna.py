@@ -24,7 +24,7 @@ def objective(trial):
     # 1. Hyperparamètres avec espaces de recherche étendus
     lr = trial.suggest_loguniform("lr", 1e-5, 1e-1)
     weight_decay = trial.suggest_loguniform("weight_decay", 1e-6, 1e-1)
-    num_embedding_type = trial.suggest_categorical("num_embedding_type", ["L", "LR", "Q-LR", "T-LR"])
+    num_embedding_type = trial.suggest_categorical("num_embedding_type", ["L", "LR", "LR-LR", "P", "P-LR", "P-LR-LR"])
     n_heads = trial.suggest_categorical("n_heads", [4, 8, 16])
     d_embedding = trial.suggest_categorical("d_embedding", [16, 32, 64])
     n_layers = trial.suggest_int("n_layers", 1, 6)
