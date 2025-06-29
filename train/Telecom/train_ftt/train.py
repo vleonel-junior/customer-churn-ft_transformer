@@ -43,9 +43,9 @@ if __name__ == '__main__':
 
     d_embedding = model.feature_tokenizer.d_token
 
-    # Embedding numérique personnalisé : P-LR
+    # Embedding numérique personnalisé : Q
     num_embedding = get_num_embedding(
-        "P-LR",
+        "Q",
         X['train'][0],
         d_embedding=d_embedding
     )
