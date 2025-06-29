@@ -17,12 +17,16 @@ if __name__ == '__main__':
     seed = 0
     patience = 10  # Early stopping
     
+    # NOUVEAU: Dimension d'embedding cohérente
+    d_embedding = 192  # Dimension standard pour FT-Transformer
+    
     # Créer le dossier de sortie si nécessaire
     output_dir = f'./outputs/seed_{seed}'
     os.makedirs(output_dir, exist_ok=True)
     
     print(f"Utilisation du device: {device}")
     print(f"Seed: {seed}")
+    print(f"Dimension d'embedding: {d_embedding}")
     
     # Charger les données
     X, y, cat_cardinalities = get_data(seed)
@@ -31,22 +35,26 @@ if __name__ == '__main__':
     train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
     
-    # Modèle
+    # Modèle avec dimensions cohérentes
     from num_embedding_factory import get_num_embedding
 
-    # Embedding numérique personnalisé : LR
+    # CORRECTION: Embedding numérique avec la même dimension
     num_embedding = get_num_embedding(
-        "LR",
+        "LR",  # ou "linear" selon votre implémentation
         X['train'][0],
-        d_embedding=16  # à ajuster selon ton besoin
+        d_embedding=d_embedding  # Même dimension que le modèle
     )
 
+    # CORRECTION: Spécifier d_embedding explicitement
     model = rtdl.FTTransformer.make_default(
         n_num_features=X['train'][0].shape[1],
         cat_cardinalities=cat_cardinalities,
+        d_embedding=d_embedding,  # Dimension explicite
         last_layer_query_idx=[-1],  # Optimisation
         d_out=d_out,
     )
+    
+    # Remplacer l'embedding numérique par défaut
     model.feature_tokenizer.num_tokenizer = num_embedding
     model.to(device)
     
@@ -61,6 +69,22 @@ if __name__ == '__main__':
     loss_fn = torch.nn.BCEWithLogitsLoss()
     
     print(f"Nombre de paramètres: {sum(p.numel() for p in model.parameters()):,}")
+    
+    # VERIFICATION: Dimensions des embeddings
+    print(f"Features numériques: {X['train'][0].shape[1]}")
+    print(f"Features catégorielles: {len(cat_cardinalities)}")
+    print(f"Cardinalités: {cat_cardinalities}")
+    
+    # Test rapide des dimensions
+    with torch.no_grad():
+        sample_x_num = torch.tensor(X['train'][0][:1], dtype=torch.float32, device=device)
+        sample_x_cat = torch.tensor(X['train'][1][:1], dtype=torch.long, device=device)
+        try:
+            _ = model.feature_tokenizer(sample_x_num, sample_x_cat)
+            print("✓ Test des dimensions réussi")
+        except Exception as e:
+            print(f"❌ Erreur de dimensions: {e}")
+            exit(1)
     
     # Entraînement
     train_loss_list = []
@@ -128,7 +152,14 @@ if __name__ == '__main__':
         'best_epoch': best_epoch,
         'best_val_loss': best_val_loss,
         'test_performance': test_performance,
-        'val_performance': val_performance
+        'val_performance': val_performance,
+        'config': {
+            'd_embedding': d_embedding,
+            'lr': lr,
+            'batch_size': batch_size,
+            'n_epochs': n_epochs,
+            'seed': seed
+        }
     }
     
     np.save(f'{output_dir}/training_results.npy', results)
