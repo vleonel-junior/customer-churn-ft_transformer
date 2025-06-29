@@ -32,7 +32,7 @@ for grid_idx, grid_params in enumerate(grid):
     all_results = []
     for seed in seeds:
         # Chargement des données
-        X, y, X_all, y_all, cat_cardinalities = get_data(seed)
+        X, y, cat_cardinalities = get_data(seed)
         train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
         val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
         test_loader = zero.data.IndexLoader(len(y['test']), batch_size, device=device)
