@@ -45,7 +45,7 @@ def objective(trial):
         for seed_idx, seed in enumerate(seeds):
             logger.info(f"Trial {trial.number}, Seed {seed_idx+1}/{len(seeds)}")
             
-            X, y, X_all, y_all, cat_cardinalities = get_data(seed)
+            X, y, cat_cardinalities = get_data(seed)
             
             # Loaders avec batch_size variable
             train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
