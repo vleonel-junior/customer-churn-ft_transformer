@@ -50,13 +50,13 @@ def objective(trial):
             # Loaders avec batch_size variable
             train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
             val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
-            
+         
             num_embedding = get_num_embedding(
-                num_embedding_type,
-                X['train'],
-                d_embedding=d_embedding,
-                y_train=y['train'] if "T" in num_embedding_type else None,
-            )
+            embedding_type = num_embedding_type,
+            X_train = X['train'][0],
+            d_embedding=d_embedding,
+            y_train = y['train'] if num_embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
+    )
             
             model = rtdl.FTTransformer(
                 n_num_features=X['train'].shape[1],
