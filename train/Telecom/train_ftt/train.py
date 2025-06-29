@@ -45,9 +45,10 @@ if __name__ == '__main__':
 
     # Embedding numérique personnalisé : T-LR-LR
     num_embedding = get_num_embedding(
-        "T-LR-LR",
-        X['train'][0],
+        embedding_type="T-LR-LR",
+        X_train = X['train'][0],
         d_embedding=d_embedding
+        y_train = y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
     )
 
     model.to(device)
