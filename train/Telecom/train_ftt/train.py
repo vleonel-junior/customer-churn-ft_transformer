@@ -44,10 +44,13 @@ if __name__ == '__main__':
     d_embedding = model.feature_tokenizer.d_token
 
     # Embedding numérique personnalisé : T-LR-LR
+    embedding_type = "T-LR-LR"  # Choisir le type d'embedding numérique
+    print(f"Type d'embedding numérique: {embedding_type}")
+
     num_embedding = get_num_embedding(
-        embedding_type="T-LR-LR",
+        embedding_type=embedding_type,
         X_train = X['train'][0],
-        d_embedding=d_embedding
+        d_embedding=d_embedding,
         y_train = y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
     )
 
