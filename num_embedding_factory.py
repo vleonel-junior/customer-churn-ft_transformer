@@ -1,4 +1,4 @@
-from rtdl.rtdl.nn._embeddings import (
+from rtdl.nn._embeddings import (
     LinearEmbeddings,
     make_lr_embeddings,
     make_ple_lr_embeddings,
@@ -7,7 +7,7 @@ from rtdl.rtdl.nn._embeddings import (
     PiecewiseLinearEncoder,
     NLinear,
 )
-from rtdl.rtdl.data import (
+from rtdl.data import (
     compute_quantile_bin_edges,
     compute_decision_tree_bin_edges,
 )
