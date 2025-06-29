@@ -34,20 +34,22 @@ if __name__ == '__main__':
     # Modèle
     from num_embedding_factory import get_num_embedding
 
-    # Embedding numérique personnalisé : LR
-    num_embedding = get_num_embedding(
-        "LR",
-        X['train'][0],
-        d_embedding=16  # à ajuster selon ton besoin
-    )
-
     model = rtdl.FTTransformer.make_default(
         n_num_features=X['train'][0].shape[1],
         cat_cardinalities=cat_cardinalities,
         last_layer_query_idx=[-1],  # Optimisation
         d_out=d_out,
     )
-    model.feature_tokenizer.num_tokenizer = num_embedding
+
+    d_embedding = model.feature_tokenizer.d_token
+
+    # Embedding numérique personnalisé : LR
+    num_embedding = get_num_embedding(
+        "LR",
+        X['train'][0],
+        d_embedding=d_embedding
+    )
+
     model.to(device)
     
     # Optimiseur

@@ -32,15 +32,15 @@ def get_num_embedding(
         L         : LinearEmbeddings
         LR        : LinearEmbeddings + ReLU
         LR-LR     : LR puis NLinear + ReLU
-        Q         : PLE quantile (stack)
+        Q         : PLE quantile (avec projection vers d_embedding)
         Q-L       : PLE → NLinear
         Q-LR      : PLE → NLinear → ReLU
         Q-LR-LR   : PLE → NLinear → ReLU → NLinear → ReLU
-        T         : PLE arbre (stack)
+        T         : PLE arbre (avec projection vers d_embedding)
         T-L       : PLE arbre → NLinear
         T-LR      : PLE arbre → NLinear → ReLU
         T-LR-LR   : PLE arbre → NLinear → ReLU → NLinear → ReLU
-        P         : PeriodicEmbeddings
+        P         : PeriodicEmbeddings (avec projection vers d_embedding)
         P-L       : Periodic → NLinear
         P-LR      : Periodic → NLinear → ReLU
         P-LR-LR   : Periodic → NLinear → ReLU → NLinear → ReLU
@@ -76,29 +76,32 @@ def get_num_embedding(
     if embedding_type in ("Q", "Q-L", "Q-LR", "Q-LR-LR"):
         edges = compute_quantile_bin_edges(X_train, n_bins=n_bins)
         ple = PiecewiseLinearEncoder(edges, stack=True)
+        
+        # Tous les cas nécessitent une projection vers d_embedding
         if embedding_type == "Q":
-            return ple
-        # projection only
-        if embedding_type == "Q-L":
             return nn.Sequential(
                 ple,
                 NLinear(n_features, ple.d_encoding, d_embedding),
             )
-        # with ReLU
-        if embedding_type == "Q-LR":
+        elif embedding_type == "Q-L":
+            return nn.Sequential(
+                ple,
+                NLinear(n_features, ple.d_encoding, d_embedding),
+            )
+        elif embedding_type == "Q-LR":
             return nn.Sequential(
                 ple,
                 NLinear(n_features, ple.d_encoding, d_embedding),
                 nn.ReLU(),
             )
-        # double LR
-        return nn.Sequential(
-            ple,
-            NLinear(n_features, ple.d_encoding, d_embedding),
-            nn.ReLU(),
-            NLinear(n_features, d_embedding, d_embedding),
-            nn.ReLU(),
-        )
+        else:  # Q-LR-LR
+            return nn.Sequential(
+                ple,
+                NLinear(n_features, ple.d_encoding, d_embedding),
+                nn.ReLU(),
+                NLinear(n_features, d_embedding, d_embedding),
+                nn.ReLU(),
+            )
 
     # ------ Tree-based PLE ------
     if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR"):
@@ -111,57 +114,86 @@ def get_num_embedding(
             tree_kwargs={'max_depth': 5, 'min_samples_leaf': 20}
         )
         ple = PiecewiseLinearEncoder(edges, stack=True)
+        
+        # Tous les cas nécessitent une projection vers d_embedding
         if embedding_type == "T":
-            return ple
-        if embedding_type == "T-L":
             return nn.Sequential(
                 ple,
                 NLinear(n_features, ple.d_encoding, d_embedding),
             )
-        if embedding_type == "T-LR":
+        elif embedding_type == "T-L":
+            return nn.Sequential(
+                ple,
+                NLinear(n_features, ple.d_encoding, d_embedding),
+            )
+        elif embedding_type == "T-LR":
             return nn.Sequential(
                 ple,
                 NLinear(n_features, ple.d_encoding, d_embedding),
                 nn.ReLU(),
             )
-        # T-LR-LR
-        return nn.Sequential(
-            ple,
-            NLinear(n_features, ple.d_encoding, d_embedding),
-            nn.ReLU(),
-            NLinear(n_features, d_embedding, d_embedding),
-            nn.ReLU(),
-        )
+        else:  # T-LR-LR
+            return nn.Sequential(
+                ple,
+                NLinear(n_features, ple.d_encoding, d_embedding),
+                nn.ReLU(),
+                NLinear(n_features, d_embedding, d_embedding),
+                nn.ReLU(),
+            )
 
     # ------ Periodic ------
     if embedding_type in ("P", "P-L", "P-LR", "P-LR-LR"):
         if d_periodic_embedding is None:
-            d_periodic_embedding = d_embedding  # Fix dimension issue
+            d_periodic_embedding = d_embedding
+            
         pe = PeriodicEmbeddings(n_features, d_periodic_embedding, sigma)
+        
+        # Tous les cas nécessitent une projection vers d_embedding
         if embedding_type == "P":
-            # Force correct output dimension
             return nn.Sequential(
                 pe,
                 NLinear(n_features, d_periodic_embedding, d_embedding),
             )
-        if embedding_type == "P-L":
+        elif embedding_type == "P-L":
             return nn.Sequential(
                 pe,
                 NLinear(n_features, d_periodic_embedding, d_embedding),
             )
-        if embedding_type == "P-LR":
+        elif embedding_type == "P-LR":
             return nn.Sequential(
                 pe,
                 NLinear(n_features, d_periodic_embedding, d_embedding),
                 nn.ReLU(),
             )
-        # P-LR-LR
-        return nn.Sequential(
-            pe,
-            NLinear(n_features, d_periodic_embedding, d_embedding),
-            nn.ReLU(),
-            NLinear(n_features, d_embedding, d_embedding),
-            nn.ReLU(),
-        )
+        else:  # P-LR-LR
+            return nn.Sequential(
+                pe,
+                NLinear(n_features, d_periodic_embedding, d_embedding),
+                nn.ReLU(),
+                NLinear(n_features, d_embedding, d_embedding),
+                nn.ReLU(),
+            )
 
     raise ValueError(f"Type d'embedding inconnu : {embedding_type}")
+
+
+def debug_embedding_dimensions(embedding_module, n_features, batch_size=32):
+    """
+    Fonction utilitaire pour déboguer les dimensions des embeddings
+    """
+    # Créer un batch d'exemple
+    x_dummy = torch.randn(batch_size, n_features)
+    
+    with torch.no_grad():
+        output = embedding_module(x_dummy)
+        print(f"Input shape: {x_dummy.shape}")
+        print(f"Output shape: {output.shape}")
+        print(f"Expected format: (batch_size={batch_size}, n_features={n_features}, d_embedding)")
+        
+        if len(output.shape) == 3:
+            batch_dim, feat_dim, emb_dim = output.shape
+            print(f"✓ Format correct: batch={batch_dim}, features={feat_dim}, embedding={emb_dim}")
+        else:
+            print(f"✗ Format incorrect: {output.shape}")
+    
+    return output.shape
