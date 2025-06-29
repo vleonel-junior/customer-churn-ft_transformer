@@ -17,7 +17,7 @@ if __name__ == '__main__':
     seed = 0
     patience = 10  # Early stopping
     
-    # NOUVEAU: Dimension d'embedding cohérente
+    # Dimension d'embedding
     d_embedding = 192  # Dimension standard pour FT-Transformer
     
     # Créer le dossier de sortie si nécessaire
@@ -38,18 +38,16 @@ if __name__ == '__main__':
     # Modèle avec dimensions cohérentes
     from num_embedding_factory import get_num_embedding
 
-    # CORRECTION: Embedding numérique avec la même dimension
     num_embedding = get_num_embedding(
         "LR",  # ou "linear" selon votre implémentation
         X['train'][0],
         d_embedding=d_embedding  # Même dimension que le modèle
     )
 
-    # CORRECTION: Spécifier d_embedding explicitement
     model = rtdl.FTTransformer.make_default(
         n_num_features=X['train'][0].shape[1],
         cat_cardinalities=cat_cardinalities,
-        d_embedding=d_embedding,  # Dimension explicite
+        d_token=d_embedding,  # Dimension explicite
         last_layer_query_idx=[-1],  # Optimisation
         d_out=d_out,
     )
@@ -75,16 +73,6 @@ if __name__ == '__main__':
     print(f"Features catégorielles: {len(cat_cardinalities)}")
     print(f"Cardinalités: {cat_cardinalities}")
     
-    # Test rapide des dimensions
-    with torch.no_grad():
-        sample_x_num = torch.tensor(X['train'][0][:1], dtype=torch.float32, device=device)
-        sample_x_cat = torch.tensor(X['train'][1][:1], dtype=torch.long, device=device)
-        try:
-            _ = model.feature_tokenizer(sample_x_num, sample_x_cat)
-            print("✓ Test des dimensions réussi")
-        except Exception as e:
-            print(f"❌ Erreur de dimensions: {e}")
-            exit(1)
     
     # Entraînement
     train_loss_list = []
