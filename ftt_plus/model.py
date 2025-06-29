@@ -10,8 +10,8 @@ import torch
 import torch.nn as nn
 from .attention import InterpretableMultiHeadAttention
 
-from rtdl.rtdl.modules import FeatureTokenizer
-from rtdl.rtdl.nn._backbones import FeedForward
+from rtdl_lib.modules import FeatureTokenizer
+from rtdl_lib.nn._backbones import FeedForward
 
 class TransformerLayer(nn.Module):
     """
