@@ -54,6 +54,9 @@ if __name__ == '__main__':
         y_train = y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
     )
 
+    # Ajouter l'embedding numérique au modèle
+    model.feature_tokenizer.num_embedding = num_embedding
+
     model.to(device)
     
     # Optimiseur
