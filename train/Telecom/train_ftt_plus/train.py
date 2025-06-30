@@ -1,12 +1,12 @@
-import rtdl_lib
-from rtdl_lib.modules import FTTransformer
 import zero
-from data.process_telecom_data import device, get_data
-from train_funct import train, val, evaluate
-import numpy as np 
-import time 
 import torch
+import numpy as np
+import time
 import os
+from data.process_telecom_data import device, get_data
+from train_func import train, val, evaluate
+from ftt_plus.model import InterpretableFTTPlus
+from num_embedding_factory import get_num_embedding
 
 if __name__ == '__main__':
     # Paramètres
@@ -17,61 +17,59 @@ if __name__ == '__main__':
     n_epochs = 50
     seed = 0
     patience = 10  # Early stopping
-    
+
     # Créer le dossier de sortie si nécessaire
     output_dir = f'./outputs/seed_{seed}'
     os.makedirs(output_dir, exist_ok=True)
-    
+
     print(f"Utilisation du device: {device}")
     print(f"Seed: {seed}")
-    
+
     # Charger les données
     X, y, cat_cardinalities = get_data(seed)
-    
+
     # Créer les loaders
     train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
-    
-    # Modèle
-    from num_embedding_factory import get_num_embedding
 
-    model = FTTransformer.make_default(
-        n_num_features=X['train'][0].shape[1],
-        cat_cardinalities=cat_cardinalities,
-        last_layer_query_idx=[-1],  # Optimisation
-        d_out=d_out,
-    )
+    # Modèle FTT+
+    n_num_features = X['train'][0].shape[1]
+    config = type('Config', (), {
+        'embedding_size': 64,
+        'n_heads': 4,
+        'attention_dropout': 0.1,
+        'ffn_hidden': 128,
+        'ffn_dropout': 0.1,
+        'residual_dropout': 0.1,
+        'n_blocks': 2
+    })()
 
-    d_embedding = model.feature_tokenizer.d_token
+    model = InterpretableFTTPlus(config, n_num_features, cat_cardinalities)
+    d_embedding = config.embedding_size
 
-    # Embedding numérique personnalisé : LR
-    embedding_type = "LR"  # Choisir le type d'embedding numérique
+    # Embedding numérique personnalisé (optionnel)
+    embedding_type = "LR"
     print(f"Type d'embedding numérique: {embedding_type}")
 
     num_embedding = get_num_embedding(
         embedding_type=embedding_type,
-        X_train = X['train'][0],
+        X_train=X['train'][0],
         d_embedding=d_embedding,
-        y_train = y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
+        y_train=y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
     )
-
     # Ajouter l'embedding numérique au modèle
     model.feature_tokenizer.num_tokenizer = num_embedding
 
     model.to(device)
-    
+
     # Optimiseur
-    optimizer = (
-        model.make_default_optimizer()
-        if isinstance(model, rtdl_lib.FTTransformer)
-        else torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    )
-    
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+
     # Fonction de perte
     loss_fn = torch.nn.BCEWithLogitsLoss()
-    
+
     print(f"Nombre de paramètres: {sum(p.numel() for p in model.parameters()):,}")
-    
+
     # Entraînement
     train_loss_list = []
     val_loss_list = []
@@ -79,25 +77,25 @@ if __name__ == '__main__':
     best_epoch = 0
     patience_counter = 0
     best_model_state = None
-    
+
     print("\n=== Début de l'entraînement ===")
-    
+
     for epoch in range(n_epochs):
         start_time = time.time()
-        
+
         # Entraînement
         train_loss = train(epoch, model, optimizer, X, y, train_loader, loss_fn)
-        
+
         # Validation
         val_loss = val(epoch, model, X, y, val_loader, loss_fn)
-        
+
         # Sauvegarde des métriques
         train_loss_list.append(train_loss)
         val_loss_list.append(val_loss)
-        
+
         epoch_time = time.time() - start_time
         print(f'Epoch {epoch:03d} completed in {epoch_time:.2f}s')
-        
+
         # Early stopping et sauvegarde du meilleur modèle
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -105,32 +103,32 @@ if __name__ == '__main__':
             patience_counter = 0
             best_model_state = model.state_dict().copy()
             print(f' <<< NOUVEAU MEILLEUR MODÈLE (val_loss: {val_loss:.4f})')
-            
+
             # Évaluation sur l'ensemble de test
             print(' >>> Évaluation sur l\'ensemble de test:')
             test_performance = evaluate(model, 'test', X, y, seed)
-            
+
         else:
             patience_counter += 1
             if patience_counter >= patience:
                 print(f'\nEarly stopping à l\'époque {epoch} (patience: {patience})')
                 break
-        
+
         print('-' * 60)
-    
+
     # Charger le meilleur modèle
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
         print(f"\nMeilleur modèle chargé (époque {best_epoch}, val_loss: {best_val_loss:.4f})")
-    
+
     # Évaluation finale
     print("\n=== Évaluation finale ===")
     print("Performance sur l'ensemble de validation:")
     val_performance = evaluate(model, 'val', X, y, seed)
-    
+
     print("\nPerformance sur l'ensemble de test:")
     test_performance = evaluate(model, 'test', X, y, seed)
-    
+
     # Sauvegarde des résultats
     results = {
         'train_losses': train_loss_list,
@@ -140,9 +138,9 @@ if __name__ == '__main__':
         'test_performance': test_performance,
         'val_performance': val_performance
     }
-    
+
     np.save(f'{output_dir}/training_results.npy', results)
     torch.save(model.state_dict(), f'{output_dir}/best_model.pt')
-    
+
     print(f"\nRésultats sauvegardés dans {output_dir}/")
     print("Entraînement terminé!")
