@@ -45,11 +45,19 @@ def get_num_embedding(
         P-LR      : Periodic → NLinear → ReLU
         P-LR-LR   : Periodic → NLinear → ReLU → NLinear → ReLU
     """
-    # Conversion numpy → tensor si nécessaire
+    # Conversion numpy → tensor si nécessaire ET s'assurer que les données sont sur CPU
     if isinstance(X_train, np.ndarray):
         X_train = torch.tensor(X_train, dtype=torch.float32)
-    if y_train is not None and isinstance(y_train, np.ndarray):
-        y_train = torch.tensor(y_train, dtype=torch.long)
+    elif isinstance(X_train, torch.Tensor):
+        # Déplacer sur CPU pour le calcul des edges
+        X_train = X_train.cpu().float()
+    
+    if y_train is not None:
+        if isinstance(y_train, np.ndarray):
+            y_train = torch.tensor(y_train, dtype=torch.long)
+        elif isinstance(y_train, torch.Tensor):
+            # Déplacer sur CPU pour le calcul des edges
+            y_train = y_train.cpu().long()
     
     n_features = X_train.shape[1]
 
@@ -74,6 +82,7 @@ def get_num_embedding(
 
     # ------ Quantile PLE ------
     if embedding_type in ("Q", "Q-L", "Q-LR", "Q-LR-LR"):
+        # X_train est maintenant garanti d'être sur CPU
         edges = compute_quantile_bin_edges(X_train, n_bins=n_bins)
         ple = PiecewiseLinearEncoder(edges, stack=True)
         
@@ -106,6 +115,7 @@ def get_num_embedding(
     # ------ Tree-based PLE ------
     if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR"):
         assert y_train is not None, "y_train requis pour PLE arbre"
+        # X_train et y_train sont maintenant garantis d'être sur CPU
         edges = compute_decision_tree_bin_edges(
             X_train, 
             n_bins=n_bins, 
