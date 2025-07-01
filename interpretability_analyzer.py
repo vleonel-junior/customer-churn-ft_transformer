@@ -149,7 +149,7 @@ class InterpretabilityAnalyzer:
             }
         }
         
-        metrics_path = self.results_dir / 'métriques' / f'{model_name}_telecom_results_seed_{seed}.json'
+        metrics_path = self.results_dir / 'métriques' / f'{model_name}_model_performance_metrics_seed_{seed}.json'
         with open(metrics_path, 'w', encoding='utf-8') as f:
             json.dump(performance_data, f, indent=2, ensure_ascii=False)
     
@@ -173,7 +173,7 @@ class InterpretabilityAnalyzer:
             ]
         }
         
-        interpretability_path = self.results_dir / 'métriques' / f'{model_name}_telecom_interpretability_seed_{seed}.json'
+        interpretability_path = self.results_dir / 'métriques' / f'{model_name}_feature_importance_analysis_seed_{seed}.json'
         with open(interpretability_path, 'w', encoding='utf-8') as f:
             json.dump(interpretability_data, f, indent=2, ensure_ascii=False)
         
@@ -182,7 +182,7 @@ class InterpretabilityAnalyzer:
     def _generate_importance_plot(self, model_name: str, seed: int, cls_importance: Dict[str, float]):
         """Génère le graphique d'importance des features."""
         print("\nGénération du graphique d'importance des features...")
-        output_path = self.results_dir / 'heatmaps' / f'{model_name}_telecom_cls_importance_seed_{seed}.png'
+        output_path = self.results_dir / 'heatmaps' / f'{model_name}_feature_importance_chart_seed_{seed}.png'
         
         # Titre personnalisé selon le modèle
         model_titles = {
@@ -200,7 +200,7 @@ class InterpretabilityAnalyzer:
     
     def _save_model(self, model_name: str, seed: int, model):
         """Sauvegarde le modèle dans le répertoire results."""
-        model_path = self.results_dir / 'best_models' / f'{model_name}_telecom_seed_{seed}.pt'
+        model_path = self.results_dir / 'best_models' / f'{model_name}_trained_model_weights_seed_{seed}.pt'
         torch.save(model.state_dict(), model_path)
     
     def _save_local_results(
@@ -225,10 +225,11 @@ class InterpretabilityAnalyzer:
     def _print_summary(self, model_name: str, seed: int):
         """Affiche un résumé des fichiers sauvegardés."""
         print(f"\n=== Résultats sauvegardés ===")
-        print(f"Métriques de performance: {self.results_dir}/métriques/{model_name}_telecom_results_seed_{seed}.json")
-        print(f"Métriques d'interprétabilité: {self.results_dir}/métriques/{model_name}_telecom_interpretability_seed_{seed}.json")
-        print(f"Graphique d'importance: {self.results_dir}/heatmaps/{model_name}_telecom_cls_importance_seed_{seed}.png")
-        print(f"Modèle sauvegardé: {self.results_dir}/best_models/{model_name}_telecom_seed_{seed}.pt")
+        print(f"Métriques de performance: {self.results_dir}/métriques/{model_name}_model_performance_metrics_seed_{seed}.json")
+        print(f"Analyse d'importance des features: {self.results_dir}/métriques/{model_name}_feature_importance_analysis_seed_{seed}.json")
+        print(f"Graphique d'importance: {self.results_dir}/heatmaps/{model_name}_feature_importance_chart_seed_{seed}.png")
+        print(f"Poids du modèle: {self.results_dir}/best_models/{model_name}_trained_model_weights_seed_{seed}.pt")
+
 
 
 def analyze_interpretability(

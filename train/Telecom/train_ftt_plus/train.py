@@ -56,7 +56,7 @@ if __name__ == '__main__':
     )
 
     # Embedding numérique personnalisé (optionnel)
-    embedding_type = "LR"
+    embedding_type = "Q-LR"
     print(f"Type d'embedding numérique: {embedding_type}")
 
     num_embedding = get_num_embedding(
