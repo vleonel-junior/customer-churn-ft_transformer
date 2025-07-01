@@ -6,6 +6,7 @@ import os
 from data.process_telecom_data import device, get_data
 from train_func import train, val, evaluate
 from ftt_plus.model import InterpretableFTTPlus
+from interpretability_analyzer import analyze_interpretability
 from num_embedding_factory import get_num_embedding
 
 if __name__ == '__main__':
@@ -32,20 +33,27 @@ if __name__ == '__main__':
     train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
 
-    # Modèle FTT+
+    # Configuration du modèle FTT+ refactorisé
     n_num_features = X['train'][0].shape[1]
-    config = type('Config', (), {
-        'embedding_size': 64,
-        'n_heads': 4,
-        'attention_dropout': 0.1,
-        'ffn_hidden': 128,
-        'ffn_dropout': 0.1,
-        'residual_dropout': 0.1,
-        'n_blocks': 2
-    })()
+    d_token = 64
+    
+    print(f"Configuration du modèle:")
+    print(f"  - Features numériques: {n_num_features}")
+    print(f"  - Features catégorielles: {len(cat_cardinalities)} (cardinalités: {cat_cardinalities})")
+    print(f"  - Taille des tokens: {d_token}")
 
-    model = InterpretableFTTPlus(config, n_num_features, cat_cardinalities)
-    d_embedding = config.embedding_size
+    # Création du modèle avec la nouvelle architecture
+    model = InterpretableFTTPlus.make_baseline(
+        n_num_features=n_num_features,
+        cat_cardinalities=cat_cardinalities,
+        d_token=d_token,
+        n_blocks=2,
+        attention_dropout=0.1,
+        ffn_d_hidden=128,
+        ffn_dropout=0.1,
+        residual_dropout=0.1,
+        d_out=d_out
+    )
 
     # Embedding numérique personnalisé (optionnel)
     embedding_type = "LR"
@@ -54,16 +62,16 @@ if __name__ == '__main__':
     num_embedding = get_num_embedding(
         embedding_type=embedding_type,
         X_train=X['train'][0],
-        d_embedding=d_embedding,
+        d_embedding=d_token,
         y_train=y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
     )
-    # Ajouter l'embedding numérique au modèle
+    # Remplacer l'embedding numérique par défaut
     model.feature_tokenizer.num_tokenizer = num_embedding
 
     model.to(device)
 
-    # Optimiseur
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    # Optimiseur avec groupes de paramètres optimisés
+    optimizer = torch.optim.AdamW(model.optimization_param_groups(), lr=lr, weight_decay=weight_decay)
 
     # Fonction de perte
     loss_fn = torch.nn.BCEWithLogitsLoss()
@@ -129,18 +137,16 @@ if __name__ == '__main__':
     print("\nPerformance sur l'ensemble de test:")
     test_performance = evaluate(model, 'test', X, y, seed)
 
-    # Sauvegarde des résultats
-    results = {
-        'train_losses': train_loss_list,
-        'val_losses': val_loss_list,
-        'best_epoch': best_epoch,
-        'best_val_loss': best_val_loss,
-        'test_performance': test_performance,
-        'val_performance': val_performance
-    }
-
-    np.save(f'{output_dir}/training_results.npy', results)
-    torch.save(model.state_dict(), f'{output_dir}/best_model.pt')
-
-    print(f"\nRésultats sauvegardés dans {output_dir}/")
+    # Analyse d'interprétabilité automatique
+    analyze_interpretability(
+        model=model, X=X, y=y, model_name='interpretable_ftt_plus', seed=seed,
+        model_config={'n_num_features': n_num_features, 'cat_cardinalities': cat_cardinalities, 
+                     'd_token': d_token, 'n_blocks': 2, 'attention_dropout': 0.1, 
+                     'ffn_d_hidden': 128, 'ffn_dropout': 0.1, 'residual_dropout': 0.1, 'embedding_type': embedding_type},
+        training_results={'train_losses': train_loss_list, 'val_losses': val_loss_list, 
+                         'best_epoch': best_epoch, 'best_val_loss': best_val_loss},
+        performance_results={'val': val_performance, 'test': test_performance},
+        local_output_dir=output_dir
+    )
+    
     print("Entraînement terminé!")
