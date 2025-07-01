@@ -1,19 +1,19 @@
-from rtdl_lib.nn._embeddings import (
-    LinearEmbeddings,
-    make_lr_embeddings,
-    make_ple_lr_embeddings,
-    make_plr_embeddings,
-    PeriodicEmbeddings,
-    PiecewiseLinearEncoder,
-    NLinear,
-)
-from rtdl_lib.data import (
-    compute_quantile_bin_edges,
-    compute_decision_tree_bin_edges,
-)
-import torch.nn as nn
+"""
+Factory pour créer différents types d'embeddings numériques basé sur rtdl_num_embeddings.
+Sortie toujours: (batch_size, n_features, d_embedding)
+"""
+
 import torch
+import torch.nn as nn
 import numpy as np
+from rtdl_num_embeddings import (
+    LinearEmbeddings,
+    LinearReLUEmbeddings,
+    PeriodicEmbeddings,
+    PiecewiseLinearEncoding,
+    PiecewiseLinearEmbeddings,
+    compute_bins,
+)
 
 
 def get_num_embedding(
@@ -23,187 +23,275 @@ def get_num_embedding(
     y_train=None,
     n_bins: int = 5,
     d_periodic_embedding: int = None,
-    sigma: float = 0.1,
+    sigma: float = 0.01,
+    **kwargs
 ):
     """
-    Retourne un module d'embedding numérique dont la sortie est toujours (batch_size, n_features, d_embedding).
-
-    embedding_type:
+    Retourne un module d'embedding numérique basé sur rtdl_num_embeddings.
+    
+    Args:
+        embedding_type: Type d'embedding (voir liste ci-dessous)
+        X_train: Données d'entraînement (batch_size, n_features) 
+        d_embedding: Dimension de sortie de l'embedding
+        y_train: Labels pour tree-based embeddings (optionnel)
+        n_bins: Nombre de bins pour PLE (défaut: 5)
+        d_periodic_embedding: Dimension pour periodic embeddings (défaut: d_embedding)
+        sigma: Paramètre pour periodic embeddings (défaut: 0.01)
+    
+    Returns:
+        Module PyTorch qui transforme (B, F) → (B, F, d_embedding)
+    
+    Types d'embeddings disponibles:
         L         : LinearEmbeddings
-        LR        : LinearEmbeddings + ReLU
-        LR-LR     : LR puis NLinear + ReLU
-        Q         : PLE quantile (avec projection vers d_embedding)
-        Q-L       : PLE → NLinear
-        Q-LR      : PLE → NLinear → ReLU
-        Q-LR-LR   : PLE → NLinear → ReLU → NLinear → ReLU
-        T         : PLE arbre (avec projection vers d_embedding)
-        T-L       : PLE arbre → NLinear
-        T-LR      : PLE arbre → NLinear → ReLU
-        T-LR-LR   : PLE arbre → NLinear → ReLU → NLinear → ReLU
-        P         : PeriodicEmbeddings (avec projection vers d_embedding)
-        P-L       : Periodic → NLinear
-        P-LR      : Periodic → NLinear → ReLU
-        P-LR-LR   : Periodic → NLinear → ReLU → NLinear → ReLU
+        LR        : LinearReLUEmbeddings  
+        LR-LR     : LinearReLUEmbeddings → projection
+        Q         : PiecewiseLinearEmbeddings (quantile bins)
+        Q-L       : PiecewiseLinearEncoding (quantile) → Linear
+        Q-LR      : PiecewiseLinearEncoding (quantile) → Linear → ReLU
+        Q-LR-LR   : PiecewiseLinearEncoding (quantile) → Linear → ReLU → Linear → ReLU
+        T         : PiecewiseLinearEmbeddings (tree bins)
+        T-L       : PiecewiseLinearEncoding (tree) → Linear  
+        T-LR      : PiecewiseLinearEncoding (tree) → Linear → ReLU
+        T-LR-LR   : PiecewiseLinearEncoding (tree) → Linear → ReLU → Linear → ReLU
+        P         : PeriodicEmbeddings
+        P-L       : PeriodicEmbeddings → projection
+        P-LR      : PeriodicEmbeddings → projection → ReLU
+        P-LR-LR   : PeriodicEmbeddings → projection → ReLU → projection → ReLU
     """
-    # Conversion numpy → tensor si nécessaire ET s'assurer que les données sont sur CPU
+    
+    # Conversion des données
     if isinstance(X_train, np.ndarray):
         X_train = torch.tensor(X_train, dtype=torch.float32)
     elif isinstance(X_train, torch.Tensor):
-        # Déplacer sur CPU pour le calcul des edges
-        X_train = X_train.cpu().float()
+        X_train = X_train.float()
     
     if y_train is not None:
         if isinstance(y_train, np.ndarray):
-            y_train = torch.tensor(y_train, dtype=torch.long)
+            y_train = torch.tensor(y_train)
         elif isinstance(y_train, torch.Tensor):
-            # Déplacer sur CPU pour le calcul des edges
-            y_train = y_train.cpu().long()
+            y_train = y_train
     
     n_features = X_train.shape[1]
-
-    # ------ Linear + ReLU ------
+    
+    # === SIMPLE EMBEDDINGS ===
     if embedding_type == "L":
-        return LinearEmbeddings(n_features, d_embedding, bias=True)
-
-    if embedding_type == "LR":
+        return LinearEmbeddings(n_features, d_embedding)
+    
+    elif embedding_type == "LR":
+        return LinearReLUEmbeddings(n_features, d_embedding)
+    
+    elif embedding_type == "LR-LR":
         return nn.Sequential(
-            LinearEmbeddings(n_features, d_embedding, bias=True),
-            nn.ReLU(),
+            LinearReLUEmbeddings(n_features, d_embedding),
+            # Projection finale pour maintenir (B, F, d_embedding)
+            nn.Linear(d_embedding, d_embedding)
         )
-
-    if embedding_type == "LR-LR":
-        # LR outputs (B,F,d_embedding) → NLinear → ReLU
-        return nn.Sequential(
-            LinearEmbeddings(n_features, d_embedding, bias=True),
-            nn.ReLU(),
-            NLinear(n_features, d_embedding, d_embedding),
-            nn.ReLU(),
-        )
-
-    # ------ Quantile PLE ------
-    if embedding_type in ("Q", "Q-L", "Q-LR", "Q-LR-LR"):
-        # X_train est maintenant garanti d'être sur CPU
-        edges = compute_quantile_bin_edges(X_train, n_bins=n_bins)
-        ple = PiecewiseLinearEncoder(edges, stack=True)
+    
+    # === PIECEWISE-LINEAR EMBEDDINGS (Quantile) ===
+    elif embedding_type.startswith("Q"):
+        # Calcul des bins basés sur les quantiles
+        bins = compute_bins(X_train, n_bins=n_bins)
         
-        # Tous les cas nécessitent une projection vers d_embedding
         if embedding_type == "Q":
-            return nn.Sequential(
-                ple,
-                NLinear(n_features, ple.d_encoding, d_embedding),
+            return PiecewiseLinearEmbeddings(
+                bins, 
+                d_embedding, 
+                activation=False, 
+                version="B"
             )
-        elif embedding_type == "Q-L":
-            return nn.Sequential(
-                ple,
-                NLinear(n_features, ple.d_encoding, d_embedding),
-            )
-        elif embedding_type == "Q-LR":
-            return nn.Sequential(
-                ple,
-                NLinear(n_features, ple.d_encoding, d_embedding),
-                nn.ReLU(),
-            )
-        else:  # Q-LR-LR
-            return nn.Sequential(
-                ple,
-                NLinear(n_features, ple.d_encoding, d_embedding),
-                nn.ReLU(),
-                NLinear(n_features, d_embedding, d_embedding),
-                nn.ReLU(),
-            )
-
-    # ------ Tree-based PLE ------
-    if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR"):
-        assert y_train is not None, "y_train requis pour PLE arbre"
-        # X_train et y_train sont maintenant garantis d'être sur CPU
-        edges = compute_decision_tree_bin_edges(
-            X_train, 
-            n_bins=n_bins, 
-            y=y_train,
-            regression=False,
-            tree_kwargs={'max_depth': 5, 'min_samples_leaf': 20}
-        )
-        ple = PiecewiseLinearEncoder(edges, stack=True)
         
-        # Tous les cas nécessitent une projection vers d_embedding
+        elif embedding_type == "Q-L":
+            total_bins = sum(len(b) - 1 for b in bins)
+            return nn.Sequential(
+                PiecewiseLinearEncoding(bins),
+                nn.Linear(total_bins, n_features * d_embedding),
+                nn.Unflatten(1, (n_features, d_embedding))
+            )
+        
+        elif embedding_type == "Q-LR":
+            total_bins = sum(len(b) - 1 for b in bins)
+            return nn.Sequential(
+                PiecewiseLinearEncoding(bins),
+                nn.Linear(total_bins, n_features * d_embedding),
+                nn.Unflatten(1, (n_features, d_embedding)),
+                nn.ReLU()
+            )
+        
+        elif embedding_type == "Q-LR-LR":
+            total_bins = sum(len(b) - 1 for b in bins)
+            return nn.Sequential(
+                PiecewiseLinearEncoding(bins),
+                nn.Linear(total_bins, n_features * d_embedding),
+                nn.Unflatten(1, (n_features, d_embedding)),
+                nn.ReLU(),
+                nn.Flatten(1),
+                nn.Linear(n_features * d_embedding, n_features * d_embedding),
+                nn.Unflatten(1, (n_features, d_embedding)),
+                nn.ReLU()
+            )
+    
+    # === PIECEWISE-LINEAR EMBEDDINGS (Tree-based) ===
+    elif embedding_type.startswith("T"):
+        if y_train is None:
+            raise ValueError("y_train requis pour les embeddings tree-based")
+        
+        # Calcul des bins basés sur les arbres de décision
+        bins = compute_bins(
+            X_train,
+            n_bins=n_bins,
+            tree_kwargs={
+                'min_samples_leaf': max(64, len(X_train) // 50),
+                'min_impurity_decrease': 1e-4,
+                'max_depth': 5
+            },
+            y=y_train,
+            regression=False  # Classification par défaut
+        )
+        
         if embedding_type == "T":
-            return nn.Sequential(
-                ple,
-                NLinear(n_features, ple.d_encoding, d_embedding),
+            return PiecewiseLinearEmbeddings(
+                bins, 
+                d_embedding, 
+                activation=False, 
+                version="B"
             )
+        
         elif embedding_type == "T-L":
+            total_bins = sum(len(b) - 1 for b in bins)
             return nn.Sequential(
-                ple,
-                NLinear(n_features, ple.d_encoding, d_embedding),
+                PiecewiseLinearEncoding(bins),
+                nn.Linear(total_bins, n_features * d_embedding),
+                nn.Unflatten(1, (n_features, d_embedding))
             )
+        
         elif embedding_type == "T-LR":
+            total_bins = sum(len(b) - 1 for b in bins)
             return nn.Sequential(
-                ple,
-                NLinear(n_features, ple.d_encoding, d_embedding),
-                nn.ReLU(),
+                PiecewiseLinearEncoding(bins),
+                nn.Linear(total_bins, n_features * d_embedding),
+                nn.Unflatten(1, (n_features, d_embedding)),
+                nn.ReLU()
             )
-        else:  # T-LR-LR
+        
+        elif embedding_type == "T-LR-LR":
+            total_bins = sum(len(b) - 1 for b in bins)
             return nn.Sequential(
-                ple,
-                NLinear(n_features, ple.d_encoding, d_embedding),
+                PiecewiseLinearEncoding(bins),
+                nn.Linear(total_bins, n_features * d_embedding),
+                nn.Unflatten(1, (n_features, d_embedding)),
                 nn.ReLU(),
-                NLinear(n_features, d_embedding, d_embedding),
-                nn.ReLU(),
+                nn.Flatten(1),
+                nn.Linear(n_features * d_embedding, n_features * d_embedding),
+                nn.Unflatten(1, (n_features, d_embedding)),
+                nn.ReLU()
             )
-
-    # ------ Periodic ------
-    if embedding_type in ("P", "P-L", "P-LR", "P-LR-LR"):
+    
+    # === PERIODIC EMBEDDINGS ===
+    elif embedding_type.startswith("P"):
         if d_periodic_embedding is None:
             d_periodic_embedding = d_embedding
-            
-        pe = PeriodicEmbeddings(n_features, d_periodic_embedding, sigma)
         
-        # Tous les cas nécessitent une projection vers d_embedding
         if embedding_type == "P":
-            return nn.Sequential(
-                pe,
-                NLinear(n_features, d_periodic_embedding, d_embedding),
+            return PeriodicEmbeddings(
+                n_features, 
+                d_periodic_embedding, 
+                lite=True,
+                frequency_init_scale=sigma
             )
-        elif embedding_type == "P-L":
-            return nn.Sequential(
-                pe,
-                NLinear(n_features, d_periodic_embedding, d_embedding),
-            )
-        elif embedding_type == "P-LR":
-            return nn.Sequential(
-                pe,
-                NLinear(n_features, d_periodic_embedding, d_embedding),
-                nn.ReLU(),
-            )
-        else:  # P-LR-LR
-            return nn.Sequential(
-                pe,
-                NLinear(n_features, d_periodic_embedding, d_embedding),
-                nn.ReLU(),
-                NLinear(n_features, d_embedding, d_embedding),
-                nn.ReLU(),
-            )
-
-    raise ValueError(f"Type d'embedding inconnu : {embedding_type}")
-
-
-def debug_embedding_dimensions(embedding_module, n_features, batch_size=32):
-    """
-    Fonction utilitaire pour déboguer les dimensions des embeddings
-    """
-    # Créer un batch d'exemple
-    x_dummy = torch.randn(batch_size, n_features)
-    
-    with torch.no_grad():
-        output = embedding_module(x_dummy)
-        print(f"Input shape: {x_dummy.shape}")
-        print(f"Output shape: {output.shape}")
-        print(f"Expected format: (batch_size={batch_size}, n_features={n_features}, d_embedding)")
         
-        if len(output.shape) == 3:
-            batch_dim, feat_dim, emb_dim = output.shape
-            print(f"✓ Format correct: batch={batch_dim}, features={feat_dim}, embedding={emb_dim}")
-        else:
-            print(f"✗ Format incorrect: {output.shape}")
+        elif embedding_type == "P-L":
+            pe = PeriodicEmbeddings(
+                n_features, 
+                d_periodic_embedding, 
+                lite=True,
+                frequency_init_scale=sigma
+            )
+            # Projection vers d_embedding si différent
+            if d_periodic_embedding != d_embedding:
+                return nn.Sequential(
+                    pe,
+                    nn.Linear(d_periodic_embedding, d_embedding)
+                )
+            else:
+                return pe
+        
+        elif embedding_type == "P-LR":
+            pe = PeriodicEmbeddings(
+                n_features, 
+                d_periodic_embedding, 
+                lite=True,
+                frequency_init_scale=sigma
+            )
+            return nn.Sequential(
+                pe,
+                nn.Linear(d_periodic_embedding, d_embedding),
+                nn.ReLU()
+            )
+        
+        elif embedding_type == "P-LR-LR":
+            pe = PeriodicEmbeddings(
+                n_features, 
+                d_periodic_embedding, 
+                lite=True,
+                frequency_init_scale=sigma
+            )
+            return nn.Sequential(
+                pe,
+                nn.Linear(d_periodic_embedding, d_embedding),
+                nn.ReLU(),
+                nn.Linear(d_embedding, d_embedding),
+                nn.ReLU()
+            )
     
-    return output.shape
+    else:
+        raise ValueError(f"Type d'embedding inconnu: {embedding_type}")
+
+
+# === CLASSE UTILITAIRE POUR USAGE FACILE ===
+class NumericalEmbedder(nn.Module):
+    """
+    Wrapper pour utilisation facile des embeddings numériques.
+    
+    Usage:
+        embedder = NumericalEmbedder("P-LR", X_train, d_embedding=32)
+        x = torch.randn(batch_size, n_features)
+        embedded = embedder(x)  # Shape: (batch_size, n_features, 32)
+    """
+    
+    def __init__(
+        self, 
+        embedding_type: str, 
+        X_train, 
+        d_embedding: int, 
+        **kwargs
+    ):
+        super().__init__()
+        self.embedding_type = embedding_type
+        self.n_features = X_train.shape[1] if hasattr(X_train, 'shape') else X_train.shape[1]
+        self.d_embedding = d_embedding
+        
+        # Créer l'embedding
+        self.embedder = get_num_embedding(
+            embedding_type=embedding_type,
+            X_train=X_train,
+            d_embedding=d_embedding,
+            **kwargs
+        )
+    
+    def forward(self, x):
+        """
+        Args:
+            x: Tensor de shape (batch_size, n_features)
+        
+        Returns:
+            Tensor de shape (batch_size, n_features, d_embedding)
+        """
+        return self.embedder(x)
+    
+    def get_output_shape(self):
+        """Retourne la shape de sortie sans la dimension batch."""
+        return (self.n_features, self.d_embedding)
+    
+    def get_flattened_size(self):
+        """Retourne la taille après aplatissement."""
+        return self.n_features * self.d_embedding
