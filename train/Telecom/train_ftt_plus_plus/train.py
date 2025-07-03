@@ -13,9 +13,9 @@ Usage:
 import argparse
 import torch
 
-# Imports du projet avec la nouvelle architecture modulaire
 from data.process_telecom_data import get_data
-from ftt_plus_plus import FTTPlusPlusPipeline, FTTPlusPlusConfig, FeatureMapping
+from ftt_plus_plus import FTTPlusPlusConfig, FeatureMapping
+from ftt_plus_plus.pipeline import FTTPlusPlusPipeline
 from ftt_plus_plus.training_stages import Stage1Trainer, Stage2Trainer
 
 

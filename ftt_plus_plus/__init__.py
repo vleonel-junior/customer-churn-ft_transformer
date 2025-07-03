@@ -16,12 +16,10 @@ Architecture Modulaire:
     - pipeline: Pipeline complet FTT++ (orchestration des deux étapes)
 """
 
-# Imports principaux pour l'interface publique
 from .config import FTTPlusPlusConfig, FeatureMapping
 from .sparse_attention import SparseRandomAttention
 from .random_model import InterpretableFTTRandom
-# from .training_stages import Stage1Trainer, Stage2Trainer
-from .pipeline import FTTPlusPlusPipeline
+
 
 __all__ = [
     # Configuration et mapping
@@ -30,10 +28,7 @@ __all__ = [
     
     # Modèles et attention
     'SparseRandomAttention',
-    'InterpretableFTTRandom',
-    
-    # Pipeline principal
-    'FTTPlusPlusPipeline'
+    'InterpretableFTTRandom'
 ]
 
 __version__ = "1.0.0"
