@@ -11,6 +11,7 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from ftt_plus.visualisation import create_importance_bar_chart
+from ftt_plus_plus.visualisation import create_ftt_plus_plus_importance_chart, visualize_sparse_attention_heatmap
 
 
 class InterpretabilityAnalyzer:
@@ -93,6 +94,9 @@ class InterpretabilityAnalyzer:
         
         # Génération du graphique d'importance
         self._generate_importance_plot(model_name, seed, cls_importance)
+        
+        # Génération de la heatmap d'attention pour tous les modèles FTT
+        self._generate_attention_heatmap(model, X, feature_names, model_name, seed)
         
         # Sauvegarde du modèle
         self._save_model(model_name, seed, model)
@@ -181,19 +185,45 @@ class InterpretabilityAnalyzer:
     
     def _generate_importance_plot(self, model_name: str, seed: int, cls_importance: Dict[str, float]):
         """Génère le graphique d'importance des features."""
+
         print("\nGénération du graphique d'importance des features...")
         output_path = self.results_dir / 'heatmaps' / f'{model_name}_feature_importance_chart_seed_{seed}.png'
         
         # Titre personnalisé selon le modèle
         model_titles = {
             'interpretable_ftt_plus': 'FTT+ Interprétable',
-            'interpretable_ftt_plus_plus': 'FTT++ Interprétable', 
-            'interpretable_ftt_random': 'FTT Random Interprétable'
+            'interpretable_ftt_plus_plus': 'FTT++ Interprétable'
         }
         title = f"Importance des Features - {model_titles.get(model_name, model_name.upper())} (Seed {seed})"
         
-        create_importance_bar_chart(
-            cls_importance,
+        # Utiliser la visualisation appropriée selon le modèle
+        if 'ftt_plus_plus' in model_name:
+            # Pour modèle FTT++ :
+            create_ftt_plus_plus_importance_chart(
+                cls_importance,
+                output_path=str(output_path),
+                title=title
+            )
+        else:
+            # Pour modèle FTT+ :
+            create_importance_bar_chart(
+                cls_importance,
+                output_path=str(output_path),
+                title=title
+            )
+    
+    def _generate_attention_heatmap(self, model, X: Dict, feature_names: List[str], model_name: str, seed: int):
+        """Génère la heatmap d'attention complète."""
+        print("Génération de la heatmap d'attention complète...")
+        output_path = self.results_dir / 'heatmaps' / f'{model_name}_attention_heatmap_seed_{seed}.png'
+        title = f'Heatmap d\'Attention - {model_name} (Seed {seed})'
+        
+        
+        visualize_sparse_attention_heatmap(
+            model=model,
+            x_num=X['test'][0],
+            x_cat=X['test'][1],
+            feature_names=feature_names,
             output_path=str(output_path),
             title=title
         )
@@ -228,6 +258,7 @@ class InterpretabilityAnalyzer:
         print(f"Métriques de performance: {self.results_dir}/métriques/{model_name}_model_performance_metrics_seed_{seed}.json")
         print(f"Analyse d'importance des features: {self.results_dir}/métriques/{model_name}_feature_importance_analysis_seed_{seed}.json")
         print(f"Graphique d'importance: {self.results_dir}/heatmaps/{model_name}_feature_importance_chart_seed_{seed}.png")
+        print(f"Heatmap d'attention: {self.results_dir}/heatmaps/{model_name}_attention_heatmap_seed_{seed}.png")
         print(f"Poids du modèle: {self.results_dir}/best_models/{model_name}_trained_model_weights_seed_{seed}.pt")
 
 
