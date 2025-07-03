@@ -11,7 +11,6 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from ftt_plus.visualisation import create_importance_bar_chart
-from ftt_plus_plus.visualisation import create_ftt_plus_plus_importance_chart, visualize_sparse_attention_heatmap
 
 
 class InterpretabilityAnalyzer:
@@ -199,11 +198,20 @@ class InterpretabilityAnalyzer:
         # Utiliser la visualisation appropriée selon le modèle
         if 'ftt_plus_plus' in model_name:
             # Pour modèle FTT++ :
-            create_ftt_plus_plus_importance_chart(
-                cls_importance,
-                output_path=str(output_path),
-                title=title
-            )
+            try:
+                from ftt_plus_plus.visualisation import create_ftt_plus_plus_importance_chart
+                create_ftt_plus_plus_importance_chart(
+                    cls_importance,
+                    output_path=str(output_path),
+                    title=title
+                )
+            except ImportError:
+                print("⚠️  Fallback vers create_importance_bar_chart")
+                create_importance_bar_chart(
+                    cls_importance,
+                    output_path=str(output_path),
+                    title=title
+                )
         else:
             # Pour modèle FTT+ :
             create_importance_bar_chart(
@@ -211,22 +219,24 @@ class InterpretabilityAnalyzer:
                 output_path=str(output_path),
                 title=title
             )
-    
     def _generate_attention_heatmap(self, model, X: Dict, feature_names: List[str], model_name: str, seed: int):
         """Génère la heatmap d'attention complète."""
         print("Génération de la heatmap d'attention complète...")
         output_path = self.results_dir / 'heatmaps' / f'{model_name}_attention_heatmap_seed_{seed}.png'
         title = f'Heatmap d\'Attention - {model_name} (Seed {seed})'
         
-        
-        visualize_sparse_attention_heatmap(
-            model=model,
-            x_num=X['test'][0],
-            x_cat=X['test'][1],
-            feature_names=feature_names,
-            output_path=str(output_path),
-            title=title
-        )
+        try:
+            from ftt_plus_plus.visualisation import visualize_sparse_attention_heatmap
+            visualize_sparse_attention_heatmap(
+                model=model,
+                x_num=X['test'][0],
+                x_cat=X['test'][1],
+                feature_names=feature_names,
+                output_path=str(output_path),
+                title=title
+            )
+        except ImportError:
+            print("⚠️  Fonction visualize_sparse_attention_heatmap non disponible")
     
     def _save_model(self, model_name: str, seed: int, model):
         """Sauvegarde le modèle dans le répertoire results."""

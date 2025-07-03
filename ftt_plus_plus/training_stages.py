@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple, Optional, Any
 from .random_model import InterpretableFTTRandom
 from .config import FeatureMapping
 from ftt_plus.model import InterpretableFTTPlus
-from interpretability_analyzer import analyze_interpretability
+
 from train.Telecom.train_ftt_plus.train_func import train, val, evaluate
 from num_embedding_factory import get_num_embedding
 import zero
@@ -225,6 +225,8 @@ class Stage1Trainer:
             'embedding_type': embedding_type,
             **self.ftt_plus_config
         }
+
+        from interpretability_analyzer import analyze_interpretability
         
         # Utiliser interpretability_analyzer pour l'analyse complète
         interpretability_results = analyze_interpretability(
@@ -494,6 +496,8 @@ class Stage2Trainer:
             'cat_cardinalities_selected': self.cat_cardinalities_selected,
             **self.random_model_config
         }
+        
+        from interpretability_analyzer import analyze_interpretability
         
         # Utiliser interpretability_analyzer pour l'analyse complète du modèle Random
         analyze_interpretability(
