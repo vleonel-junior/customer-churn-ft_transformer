@@ -16,6 +16,7 @@ import torch
 # Imports du projet avec la nouvelle architecture modulaire
 from data.process_telecom_data import get_data
 from ftt_plus_plus import FTTPlusPlusPipeline, FTTPlusPlusConfig, FeatureMapping
+from ftt_plus_plus.training_stages import Stage1Trainer, Stage2Trainer
 
 
 def parse_arguments():

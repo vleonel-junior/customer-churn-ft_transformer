@@ -225,19 +225,34 @@ class InterpretabilityAnalyzer:
         output_path = self.results_dir / 'heatmaps' / f'{model_name}_attention_heatmap_seed_{seed}.png'
         title = f'Heatmap d\'Attention - {model_name} (Seed {seed})'
         
-        try:
-            from ftt_plus_plus.visualisation import visualize_sparse_attention_heatmap
-            visualize_sparse_attention_heatmap(
-                model=model,
-                x_num=X['test'][0],
-                x_cat=X['test'][1],
-                feature_names=feature_names,
-                output_path=str(output_path),
-                title=title
-            )
-        except ImportError:
-            print("⚠️  Fonction visualize_sparse_attention_heatmap non disponible")
-    
+        # Utiliser la visualisation appropriée selon le modèle
+        if 'ftt_plus_plus' in model_name:
+            try:
+                from ftt_plus_plus.visualisation import visualize_sparse_attention_heatmap
+                visualize_sparse_attention_heatmap(
+                    model=model,
+                    x_num=X['test'][0],
+                    x_cat=X['test'][1],
+                    feature_names=feature_names,
+                    output_path=str(output_path),
+                    title=title
+                )
+            except ImportError:
+                print("⚠️  Fonction visualize_sparse_attention_heatmap non disponible")
+        else:
+            # Pour FTT+ classique, utiliser la fonction de ftt_plus
+            try:
+                from ftt_plus.visualisation import visualize_full_interactions
+                visualize_full_interactions(
+                    model=model,
+                    x_num=X['test'][0],
+                    x_cat=X['test'][1],
+                    feature_names=feature_names,
+                    output_path=str(output_path),
+                    title=title
+                )
+            except ImportError:
+                print("⚠️  Fonction visualize_full_interactions non disponible")
     def _save_model(self, model_name: str, seed: int, model):
         """Sauvegarde le modèle dans le répertoire results."""
         model_path = self.results_dir / 'best_models' / f'{model_name}_trained_model_weights_seed_{seed}.pt'

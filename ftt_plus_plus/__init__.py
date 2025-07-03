@@ -20,7 +20,7 @@ Architecture Modulaire:
 from .config import FTTPlusPlusConfig, FeatureMapping
 from .sparse_attention import SparseRandomAttention
 from .random_model import InterpretableFTTRandom
-from .training_stages import Stage1Trainer, Stage2Trainer
+# from .training_stages import Stage1Trainer, Stage2Trainer
 from .pipeline import FTTPlusPlusPipeline
 
 __all__ = [
@@ -29,12 +29,8 @@ __all__ = [
     'FeatureMapping',
     
     # Modèles et attention
-    'SparseRandomAttention', 
+    'SparseRandomAttention',
     'InterpretableFTTRandom',
-    
-    # Entraînement
-    'Stage1Trainer',
-    'Stage2Trainer',
     
     # Pipeline principal
     'FTTPlusPlusPipeline'
