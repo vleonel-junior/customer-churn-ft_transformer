@@ -15,7 +15,6 @@ from .random_model import InterpretableFTTRandom
 from .config import FeatureMapping
 from ftt_plus.model import InterpretableFTTPlus
 
-from train.Telecom.train_ftt_plus.train_func import train, val, evaluate
 from num_embedding_factory import get_num_embedding
 import zero
 
@@ -151,6 +150,9 @@ class Stage1Trainer:
         optimizer = torch.optim.AdamW(model.optimization_param_groups(), lr=lr, weight_decay=0.0)
         loss_fn = torch.nn.BCEWithLogitsLoss()
         
+        # Importer les fonctions d'entraînement et de validation
+        from train.Telecom.train_ftt_plus.train_func import train, val, evaluate
+        
         # Entraînement
         print("⏳ Entraînement du modèle FTT+ en cours...")
         train_loss_list = []
@@ -203,6 +205,7 @@ class Stage1Trainer:
     
     def _evaluate_model(self, model: nn.Module, X: Dict, y: Dict, seed: int) -> Dict[str, Any]:
         """Évalue le modèle sur validation et test."""
+        from train.Telecom.train_ftt_plus.train_func import evaluate
         print("\n Évaluation finale du modèle FTT+...")
         val_performance = evaluate(model, 'val', X, y, seed)
         test_performance = evaluate(model, 'test', X, y, seed)
@@ -393,8 +396,9 @@ class Stage2Trainer:
         return model_random, attention_stats
     
     def _train_model(self, model: nn.Module, X: Dict, y: Dict, n_epochs: int,
-                    lr: float, batch_size: int, patience: int, device: str) -> Dict[str, Any]:
+                     lr: float, batch_size: int, patience: int, device: str) -> Dict[str, Any]:
         """Entraîne le modèle Random avec early stopping."""
+        from train.Telecom.train_ftt_plus.train_func import train, val
         # Créer les loaders
         train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
         val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
@@ -455,6 +459,7 @@ class Stage2Trainer:
     
     def _evaluate_model(self, model: nn.Module, X: Dict, y: Dict, seed: int) -> Dict[str, Any]:
         """Évalue le modèle Random sur validation et test."""
+        from train.Telecom.train_ftt_plus.train_func import evaluate
         print("\n Évaluation finale du modèle Random...")
         val_performance = evaluate(model, 'val', X, y, seed)
         test_performance = evaluate(model, 'test', X, y, seed)
