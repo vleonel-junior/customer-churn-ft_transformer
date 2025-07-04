@@ -7,13 +7,6 @@ Le mécanisme combine :
 2. Attention pour k paires de features choisies aléatoirement
 3. Exclusion de l'auto-attention (comme dans FTT+)
 
-Principe:
----------
-- Focus sur les interactions essentielles (CLS ↔ features importantes)
-- Exploration limitée des interactions feature-feature (k paires aléatoires)
-- Réduction de la complexité computationnelle
-- Maintien de l'interprétabilité
-
 Innovation:
 -----------
 Cette approche combine la focalisation de FTT+ avec une exploration
@@ -26,7 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 import random
-from typing import List, Tuple, Optional, Set, Dict, Any
+from typing import List, Tuple, Optional, Dict, Any
 
 
 class SparseRandomAttention(nn.Module):
@@ -70,7 +63,7 @@ class SparseRandomAttention(nn.Module):
         self.dropout = dropout
         self.seed = seed
         
-        # Projections Q, K, V par tête (comme dans l'attention TFT)
+        # Projections Q et K spécifiques à chaque tête (pour la diversité)
         self.q_projections = nn.ModuleList([
             nn.Linear(d_model, self.d_head) for _ in range(n_heads)
         ])
@@ -209,7 +202,7 @@ class SparseRandomAttention(nn.Module):
             attention_h = F.softmax(scores_h, dim=-1)
             attention_scores_per_head.append(attention_h)
         
-        # Moyenner les scores d'attention de toutes les têtes (interprétabilité TFT)
+        # Moyenner les scores d'attention de toutes les têtes (interprétabilité)
         avg_attention = torch.stack(attention_scores_per_head, dim=0).mean(dim=0)
         # (batch_size, seq_len, seq_len)
         

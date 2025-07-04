@@ -1,7 +1,7 @@
 """
-Module de Visualisation  pour FTT+ Interprétable
+Module de Visualisation pour FTT+ Interprétable
 
-Deux fonctions principales qui utilisent get_attention_heatmap() du modèle:
+Fonctions essentielles pour visualiser les résultats FTT+ :
 1. visualize_cls_importance() - Pour l'importance CLS → features
 2. visualize_full_interactions() - Pour toutes les interactions
 """

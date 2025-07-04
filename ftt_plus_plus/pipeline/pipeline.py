@@ -5,28 +5,20 @@ Ce module implémente le pipeline complet FTT++ qui combine :
 1. Entraînement d'un modèle FTT+ et sélection des M features importantes
 2. Entraînement d'un modèle Random sur les features sélectionnées
 
-Le pipeline gère automatiquement :
-- L'entraînement complet du modèle FTT+ (étape 1)
-- L'analyse d'interprétabilité via interpretability_analyzer
-- La sélection des M features les plus importantes
-- L'entraînement du modèle Random sur les features sélectionnées (étape 2)
-- L'évaluation comparative des performances
-
-Usage:
-------
-pipeline = FTTPlusPlusPipeline(M=10, k=5)
-results = pipeline.run_complete_pipeline(X, y, cat_cardinalities)
+Le pipeline est générique et reçoit toutes les fonctions d'entraînement en paramètre.
 """
 
 import torch
 import numpy as np
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Callable
 from pathlib import Path
 import json
 import time
 
-from .config import FTTPlusPlusConfig, FeatureMapping
-from .training_stages import Stage1Trainer, Stage2Trainer
+from ..config.pipeline_config import FTTPlusPlusConfig
+from ..config.feature_mapping import FeatureMapping
+from ..training.stage1_trainer import Stage1Trainer
+from ..training.stage2_trainer import Stage2Trainer
 
 
 class FTTPlusPlusPipeline:
@@ -36,46 +28,22 @@ class FTTPlusPlusPipeline:
     Cette classe orchestre l'ensemble du processus FTT++ :
     1. Entraînement complet FTT+ → Analyse d'interprétabilité → Sélection des M features
     2. Entraînement Random sur les features sélectionnées → Modèle final optimisé
+    
+    Le pipeline est entièrement générique et ne contient aucune dépendance dataset.
     """
     
     def __init__(
         self,
-        config: Optional[FTTPlusPlusConfig] = None,
-        M: int = 10,
-        k: int = 5,
-        attention_seed: int = 42,
-        results_dir: str = 'results/results_telecom',
-        feature_mapping: Optional[FeatureMapping] = None
+        config: FTTPlusPlusConfig,
+        feature_mapping: FeatureMapping
     ):
         """
         Args:
-            config: Configuration complète (si None, utilise les autres paramètres)
-            M: Nombre de features à sélectionner
-            k: Nombre d'interactions aléatoires
-            attention_seed: Seed pour la reproductibilité
-            results_dir: Répertoire de sauvegarde
-            feature_mapping: Mapping explicite des features (si None, utilise Telecom par défaut)
+            config: Configuration complète du pipeline
+            feature_mapping: Mapping des features (passé depuis le script)
         """
-        if config is not None:
-            self.config = config
-        else:
-            # Configuration par défaut
-            self.config = FTTPlusPlusConfig(
-                ftt_plus_config=self._get_default_ftt_plus_config(),
-                M=M,
-                k=k,
-                random_model_config=self._get_default_random_config(),
-                attention_seed=attention_seed,
-                results_dir=results_dir
-            )
-        
-        # Mapping des features
-        if feature_mapping is None:
-            self.feature_mapping = FeatureMapping.from_telecom_dataset()
-            print("Utilisation du mapping Telecom par défaut")
-        else:
-            self.feature_mapping = feature_mapping
-            print("Utilisation du mapping personnalisé")
+        self.config = config
+        self.feature_mapping = feature_mapping
 
         self.results_dir = Path(self.config.results_dir)
         self.results_dir.mkdir(parents=True, exist_ok=True)
@@ -101,35 +69,15 @@ class FTTPlusPlusPipeline:
         self.selected_features = None
         self.feature_importance_scores = None
     
-    def _get_default_ftt_plus_config(self) -> Dict[str, Any]:
-        """Configuration par défaut pour FTT+."""
-        return {
-            'd_token': 64,
-            'n_blocks': 3,
-            'attention_dropout': 0.1,
-            'ffn_d_hidden': 128,
-            'ffn_dropout': 0.1,
-            'residual_dropout': 0.1,
-            'd_out': 1
-        }
-    
-    def _get_default_random_config(self) -> Dict[str, Any]:
-        """Configuration par défaut pour le modèle Random."""
-        return {
-            'd_token': 64,
-            'n_blocks': 3,
-            'attention_dropout': 0.1,
-            'ffn_d_hidden': 128,
-            'ffn_dropout': 0.1,
-            'residual_dropout': 0.1,
-            'd_out': 1
-        }
-    
     def stage1_train_ftt_plus(
         self,
         X: Dict[str, Tuple[torch.Tensor, torch.Tensor]],
         y: Dict[str, torch.Tensor],
         cat_cardinalities: List[int],
+        train_func: Callable,
+        val_func: Callable,
+        evaluate_func: Callable,
+        create_loaders_func: Callable,
         n_epochs: int = 50,
         lr: float = 1e-3,
         batch_size: int = 64,
@@ -142,14 +90,16 @@ class FTTPlusPlusPipeline:
         Étape 1 : Entraîne un modèle FTT+ et sélectionne les features importantes.
         
         Cette méthode délègue à Stage1Trainer pour gérer l'entraînement et la sélection.
-        
-        Args:
-            device: Device configuré par le script d'entraînement
+        Toutes les fonctions d'entraînement sont passées en paramètre.
         """
         stage1_results = self.stage1_trainer.train_ftt_plus(
             X=X,
             y=y,
             cat_cardinalities=cat_cardinalities,
+            train_func=train_func,
+            val_func=val_func,
+            evaluate_func=evaluate_func,
+            create_loaders_func=create_loaders_func,
             n_epochs=n_epochs,
             lr=lr,
             batch_size=batch_size,
@@ -175,6 +125,10 @@ class FTTPlusPlusPipeline:
         X: Dict[str, Tuple[torch.Tensor, torch.Tensor]],
         y: Dict[str, torch.Tensor],
         cat_cardinalities: List[int],
+        train_func: Callable,
+        val_func: Callable,
+        evaluate_func: Callable,
+        create_loaders_func: Callable,
         stage1_results: Optional[Dict[str, Any]] = None,
         n_epochs: int = 50,
         lr: float = 1e-3,
@@ -187,9 +141,7 @@ class FTTPlusPlusPipeline:
         Étape 2 : Entraîne un modèle Random sur les features sélectionnées.
         
         Cette méthode délègue à Stage2Trainer pour gérer l'entraînement du modèle Random.
-        
-        Args:
-            device: Device configuré par le script d'entraînement 
+        Toutes les fonctions d'entraînement sont passées en paramètre.
         """
         if stage1_results is None:
             if self.stage1_results is None:
@@ -203,6 +155,10 @@ class FTTPlusPlusPipeline:
             y=y,
             cat_cardinalities=cat_cardinalities,
             selected_features=selected_features,
+            train_func=train_func,
+            val_func=val_func,
+            evaluate_func=evaluate_func,
+            create_loaders_func=create_loaders_func,
             n_epochs=n_epochs,
             lr=lr,
             batch_size=batch_size,
@@ -223,6 +179,10 @@ class FTTPlusPlusPipeline:
         X: Dict[str, Tuple[torch.Tensor, torch.Tensor]],
         y: Dict[str, torch.Tensor],
         cat_cardinalities: List[int],
+        train_func: Callable,
+        val_func: Callable,
+        evaluate_func: Callable,
+        create_loaders_func: Callable,
         stage1_epochs: int = 50,
         stage2_epochs: int = 50,
         lr: float = 1e-3,
@@ -235,8 +195,18 @@ class FTTPlusPlusPipeline:
         """
         Exécute le pipeline complet FTT++ (Étape 1 + Étape 2).
         
+        Toutes les fonctions d'entraînement sont passées en paramètre pour
+        maintenir la généricité du pipeline.
+        
         Args:
-            device: Device déjà configuré par setup_device()
+            X: Données d'entrée
+            y: Labels
+            cat_cardinalities: Cardinalités des features catégorielles
+            train_func: Fonction d'entraînement
+            val_func: Fonction de validation
+            evaluate_func: Fonction d'évaluation
+            create_loaders_func: Fonction de création des loaders
+            device: Device déjà configuré
         
         Returns:
             Résultats complets du pipeline avec comparaisons
@@ -248,13 +218,16 @@ class FTTPlusPlusPipeline:
         # Étape 1: FTT+ avec entraînement complet
         stage1_results = self.stage1_train_ftt_plus(
             X, y, cat_cardinalities,
+            train_func, val_func, evaluate_func, create_loaders_func,
             n_epochs=stage1_epochs, lr=lr, batch_size=batch_size, 
             patience=patience, seed=seed, embedding_type=embedding_type, device=device
         )
         
         # Étape 2: Random sur features sélectionnées
         stage2_results = self.stage2_train_random_model(
-            X, y, cat_cardinalities, stage1_results,
+            X, y, cat_cardinalities,
+            train_func, val_func, evaluate_func, create_loaders_func,
+            stage1_results,
             n_epochs=stage2_epochs, lr=lr, batch_size=batch_size,
             patience=patience, seed=seed, device=device
         )

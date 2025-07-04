@@ -14,9 +14,8 @@ import argparse
 import torch
 
 from data.process_telecom_data import get_data
-from ftt_plus_plus import FTTPlusPlusConfig, FeatureMapping
-from ftt_plus_plus.pipeline import FTTPlusPlusPipeline
-from ftt_plus_plus.training_stages import Stage1Trainer, Stage2Trainer
+from ftt_plus_plus import FTTPlusPlusConfig, FeatureMapping, FTTPlusPlusPipeline
+from train_func import train, val, evaluate, create_loaders
 
 
 def parse_arguments():
@@ -143,17 +142,32 @@ def main():
     print(f"Features catégorielles: {len(cat_cardinalities)}")
     print(f"Échantillons: train={len(y['train'])}, val={len(y['val'])}, test={len(y['test'])}")
     
-    # Créer le mapping des features et la configuration
-    feature_mapping = FeatureMapping.from_telecom_dataset()
+    # Créer le mapping des features pour le dataset Telecom
+    feature_mapping = FeatureMapping.create_mapping(
+        num_feature_names=['tenure', 'MonthlyCharges', 'TotalCharges'],
+        cat_feature_names=[
+            'gender', 'SeniorCitizen', 'Partner', 'Dependents',
+            'PhoneService', 'MultipleLines', 'InternetService',
+            'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
+            'TechSupport', 'StreamingTV', 'StreamingMovies',
+            'Contract', 'PaperlessBilling', 'PaymentMethod'
+        ]
+    )
+    
+    # Créer la configuration
     config = create_ftt_plus_plus_config(args)
     
     # Créer et exécuter le pipeline (gère tout : entraînement, analyse, sauvegarde)
-    pipeline = FTTPlusPlusPipeline(config, feature_mapping=feature_mapping)
+    pipeline = FTTPlusPlusPipeline(config, feature_mapping)
     
     pipeline.run_complete_pipeline(
         X=X,
         y=y,
         cat_cardinalities=cat_cardinalities,
+        train_func=train,
+        val_func=val,
+        evaluate_func=evaluate,
+        create_loaders_func=create_loaders,
         stage1_epochs=args.stage1_epochs,
         stage2_epochs=args.stage2_epochs,
         lr=args.lr,

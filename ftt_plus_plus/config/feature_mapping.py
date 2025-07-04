@@ -1,36 +1,13 @@
-"""
-Configuration et Mapping des Features pour FTT++
-
-Ce module contient :
-1. FTTPlusPlusConfig - Configuration complète du pipeline
-2. FeatureMapping - Gestion explicite du mapping des features
-"""
-
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple
 from dataclasses import dataclass
 
 
 @dataclass
-class FTTPlusPlusConfig:
-    """Configuration pour le pipeline FTT++."""
-    
-    # Étape 1: Configuration FTT+
-    ftt_plus_config: Dict[str, Any]
-    
-    # Étape 2: Configuration du modèle Random
-    M: int  # Nombre de features à sélectionner
-    k: int  # Nombre d'interactions feature-feature aléatoires
-    random_model_config: Dict[str, Any]
-    
-    # Configuration générale
-    attention_seed: Optional[int] = 42
-    results_dir: str = 'results/results_telecom'
-    save_intermediate: bool = True
-
-
-@dataclass
 class FeatureMapping:
-    """Structure pour gérer explicitement le mapping des features."""
+    """
+    Cette classe permet de définir un mapping flexible entre les features
+    numériques et catégorielles, tout en assurant la cohérence des données.
+    """
     
     num_feature_names: List[str]  # Noms des features numériques
     cat_feature_names: List[str]  # Noms des features catégorielles
@@ -47,21 +24,26 @@ class FeatureMapping:
             )
     
     @classmethod
-    def from_telecom_dataset(cls) -> 'FeatureMapping':
-        """Crée le mapping pour le dataset Telecom."""
-        num_features = ['tenure', 'MonthlyCharges', 'TotalCharges']
-        cat_features = [
-            'gender', 'SeniorCitizen', 'Partner', 'Dependents',
-            'PhoneService', 'MultipleLines', 'InternetService',
-            'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
-            'TechSupport', 'StreamingTV', 'StreamingMovies',
-            'Contract', 'PaperlessBilling', 'PaymentMethod'
-        ]
-        all_features = num_features + cat_features
+    def create_mapping(
+        cls, 
+        num_feature_names: List[str], 
+        cat_feature_names: List[str]
+    ) -> 'FeatureMapping':
+        """
+        Crée un mapping générique à partir des listes de noms.
+        
+        Args:
+            num_feature_names: Liste des noms de features numériques
+            cat_feature_names: Liste des noms de features catégorielles
+            
+        Returns:
+            FeatureMapping: Instance configurée
+        """
+        all_features = num_feature_names + cat_feature_names
         
         return cls(
-            num_feature_names=num_features,
-            cat_feature_names=cat_features,
+            num_feature_names=num_feature_names,
+            cat_feature_names=cat_feature_names,
             all_feature_names=all_features
         )
     
@@ -96,7 +78,13 @@ class FeatureMapping:
         return indices_num, indices_cat
     
     def validate_data_consistency(self, X_num_shape: int, X_cat_shape: int):
-        """Valide que les données correspondent au mapping."""
+        """
+        Valide que les données correspondent au mapping.
+        
+        Args:
+            X_num_shape: Nombre de features numériques dans les données
+            X_cat_shape: Nombre de features catégorielles dans les données
+        """
         if X_num_shape != len(self.num_feature_names):
             raise ValueError(
                 f"Nombre de features numériques incohérent: "
@@ -110,3 +98,35 @@ class FeatureMapping:
             )
         
         print(f"✅ Validation mapping: {X_num_shape} num + {X_cat_shape} cat = {len(self.all_feature_names)} total")
+    
+    def get_feature_type(self, feature_name: str) -> str:
+        """
+        Détermine le type d'une feature.
+        
+        Args:
+            feature_name: Nom de la feature
+            
+        Returns:
+            'NUM' ou 'CAT' selon le type
+        """
+        if feature_name in self.num_feature_names:
+            return 'NUM'
+        elif feature_name in self.cat_feature_names:
+            return 'CAT'
+        else:
+            raise ValueError(f"Feature '{feature_name}' introuvable dans le mapping")
+    
+    @property
+    def n_num_features(self) -> int:
+        """Nombre de features numériques."""
+        return len(self.num_feature_names)
+    
+    @property
+    def n_cat_features(self) -> int:
+        """Nombre de features catégorielles."""
+        return len(self.cat_feature_names)
+    
+    @property
+    def n_total_features(self) -> int:
+        """Nombre total de features."""
+        return len(self.all_feature_names)

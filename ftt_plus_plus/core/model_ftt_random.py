@@ -62,7 +62,7 @@ class SparseTransformerBlock(nn.Module):
         self.prenormalization = prenormalization
         
         # Mécanisme d'attention sparse
-        self.attention = SparseRandomAttention(
+        self.attention: SparseRandomAttention = SparseRandomAttention(
             d_model=d_token,
             n_heads=n_heads,
             M=M,
@@ -143,35 +143,13 @@ class SparseTransformerBlock(nn.Module):
         return x, attention_weights
 
 
-class InterpretableFTTRandom(nn.Module):
+class FTTRandomModel(nn.Module):
     """
     Modèle FTT Random pour la deuxième étape de FTT++.
     
     Ce modèle opère uniquement sur les M features les plus importantes
     sélectionnées par un modèle FTT+ pré-entraîné et utilise une attention
     sparse avec k interactions aléatoires entre features.
-    
-    Args:
-        selected_feature_indices_num: Indices des features numériques sélectionnées
-        selected_feature_indices_cat: Indices des features catégorielles sélectionnées
-        cat_cardinalities_selected: Cardinalités des features catégorielles sélectionnées
-        d_token: Taille des tokens
-        n_blocks: Nombre de blocs Transformer
-        attention_n_heads: Nombre de têtes d'attention
-        k: Nombre de paires d'interactions feature-feature aléatoires
-        attention_dropout: Taux de dropout de l'attention
-        attention_initialization: Initialisation des projections d'attention
-        attention_normalization: Type de normalisation de l'attention
-        ffn_d_hidden: Taille cachée du feed-forward network
-        ffn_dropout: Taux de dropout du FFN
-        ffn_activation: Fonction d'activation du FFN
-        ffn_normalization: Type de normalisation du FFN
-        residual_dropout: Taux de dropout des connexions résiduelles
-        prenormalization: Si True, normalisation avant les sous-modules
-        head_activation: Fonction d'activation de la tête finale
-        head_normalization: Type de normalisation de la tête finale
-        d_out: Dimension de sortie
-        attention_seed: Seed pour la reproductibilité des interactions aléatoires
     """
     
     def __init__(
@@ -219,7 +197,7 @@ class InterpretableFTTRandom(nn.Module):
         self.cls_token = CLSToken(d_token, self.feature_tokenizer.initialization)
         
         # Blocs Transformer avec attention sparse
-        self.blocks = nn.ModuleList([
+        self.blocks: nn.ModuleList[SparseTransformerBlock] = nn.ModuleList([
             SparseTransformerBlock(
                 d_token=d_token,
                 n_heads=attention_n_heads,
@@ -266,21 +244,15 @@ class InterpretableFTTRandom(nn.Module):
         }
     
     @classmethod
-    def from_selected_features(
+    def create_model(
         cls,
         selected_feature_indices_num: List[int],
         selected_feature_indices_cat: List[int],
         cat_cardinalities_selected: List[int],
-        d_token: int,
-        n_blocks: int,
+        model_config: Dict[str, Any],
         k: int,
-        attention_dropout: float,
-        ffn_d_hidden: int,
-        ffn_dropout: float,
-        residual_dropout: float,
-        d_out: int,
         attention_seed: Optional[int] = None,
-    ) -> 'InterpretableFTTRandom':
+    ) -> 'FTTRandomModel':
         """
         Crée un modèle FTT Random avec configuration baseline.
         
@@ -288,32 +260,20 @@ class InterpretableFTTRandom(nn.Module):
             selected_feature_indices_num: Indices des features numériques sélectionnées
             selected_feature_indices_cat: Indices des features catégorielles sélectionnées
             cat_cardinalities_selected: Cardinalités des features catégorielles sélectionnées
-            d_token: Taille des tokens
-            n_blocks: Nombre de blocs Transformer
+            model_config: Configuration du modèle
             k: Nombre de paires d'interactions aléatoires
-            attention_dropout: Taux de dropout de l'attention
-            ffn_d_hidden: Taille cachée du FFN
-            ffn_dropout: Taux de dropout du FFN
-            residual_dropout: Taux de dropout des connexions résiduelles
-            d_out: Dimension de sortie
             attention_seed: Seed pour les interactions aléatoires
             
         Returns:
-            InterpretableFTTRandom: modèle configuré
+            FTTRandomModel: modèle configuré
         """
         config = cls.get_baseline_config()
+        config.update(model_config)
         config.update({
             'selected_feature_indices_num': selected_feature_indices_num,
             'selected_feature_indices_cat': selected_feature_indices_cat,
             'cat_cardinalities_selected': cat_cardinalities_selected,
-            'd_token': d_token,
-            'n_blocks': n_blocks,
             'k': k,
-            'attention_dropout': attention_dropout,
-            'ffn_d_hidden': ffn_d_hidden,
-            'ffn_dropout': ffn_dropout,
-            'residual_dropout': residual_dropout,
-            'd_out': d_out,
             'attention_seed': attention_seed,
         })
         return cls(**config)
@@ -443,7 +403,8 @@ class InterpretableFTTRandom(nn.Module):
         """
         for i, block in enumerate(self.blocks):
             block_seed = new_seed + i if new_seed is not None else None
-            block.attention.update_random_pairs(block_seed)
+            sparse_attention: SparseRandomAttention = block.attention
+            sparse_attention.update_random_pairs(block_seed)
     
     def optimization_param_groups(self) -> List[Dict[str, Any]]:
         """Groupes de paramètres optimisés pour l'entraînement (style RTDL)."""
@@ -459,3 +420,23 @@ class InterpretableFTTRandom(nn.Module):
                 'weight_decay': 0.0,
             },
         ]
+    
+    def get_model_info(self) -> Dict[str, Any]:
+        """
+        Retourne des informations sur le modèle.
+        
+        Returns:
+            Dict avec les informations du modèle
+        """
+        n_params = sum(p.numel() for p in self.parameters())
+        attention_stats = self.get_attention_statistics()
+        
+        return {
+            'model_type': 'FTT Random',
+            'n_parameters': n_params,
+            'M': self.M,
+            'k': self.k,
+            'n_num_features_selected': self.n_num_features_selected,
+            'n_cat_features_selected': self.n_cat_features_selected,
+            'attention_statistics': attention_stats
+        }
