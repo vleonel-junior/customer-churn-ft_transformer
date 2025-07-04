@@ -60,7 +60,8 @@ class FTTPlusPlusPipeline:
             feature_mapping=self.feature_mapping,
             random_model_config=self.config.random_model_config,
             k=self.config.k,
-            attention_seed=self.config.attention_seed
+            attention_seed=self.config.attention_seed,
+            results_dir=str(self.results_dir)
         )
         
         # Résultats intermédiaires

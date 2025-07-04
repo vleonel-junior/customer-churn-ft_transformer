@@ -23,11 +23,12 @@ class Stage2Trainer:
     """
     
     def __init__(
-        self, 
-        feature_mapping: FeatureMapping, 
+        self,
+        feature_mapping: FeatureMapping,
         random_model_config: Dict[str, Any],
-        k: int, 
-        attention_seed: int
+        k: int,
+        attention_seed: int,
+        results_dir: str
     ):
         """
         Args:
@@ -35,11 +36,13 @@ class Stage2Trainer:
             random_model_config: Configuration du modèle Random
             k: Nombre d'interactions aléatoires
             attention_seed: Seed pour l'attention
+            results_dir: Répertoire de sauvegarde
         """
         self.feature_mapping = feature_mapping
         self.random_model_config = random_model_config
         self.k = k
         self.attention_seed = attention_seed
+        self.results_dir = results_dir
     
     def train_random_model(
         self,
@@ -318,5 +321,5 @@ class Stage2Trainer:
             performance_results=performance_results,
             feature_names=selected_features,  # Seulement les features sélectionnées
             local_output_dir=None,
-            results_base_dir='results/results_telecom'
+            results_base_dir=str(self.results_dir)
         )
