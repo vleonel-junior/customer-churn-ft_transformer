@@ -68,16 +68,14 @@ class InterpretabilityAnalyzer:
     
     def _save_metrics(self, model_name: str, seed: int, model_config: Dict, training_results: Dict, performance_results: Dict, model):
         """Sauvegarde les métriques de performance."""
-        metrics_names = ['roc_auc', 'pr_auc', 'accuracy', 'balanced_accuracy', 'mcc', 'sensitivity', 'specificity', 'precision', 'f1', 'cohen_kappa']
-        
         data = {
             'model_name': model_name,
             'seed': seed,
             'model_config': model_config,
             'training': {**training_results, 'n_parameters': sum(p.numel() for p in model.parameters())},
             'performance': {
-                'val': dict(zip(metrics_names, [float(x) for x in performance_results['val']])),
-                'test': dict(zip(metrics_names, [float(x) for x in performance_results['test']]))
+                'val': performance_results['val'],
+                'test': performance_results['test']
             }
         }
         
