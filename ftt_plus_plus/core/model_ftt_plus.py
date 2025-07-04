@@ -80,9 +80,10 @@ class FTTPlusModelWrapper:
         return self.model(x_num, x_cat)
     
     def get_cls_importance(
-        self, 
-        x_num: Optional[Tensor], 
-        x_cat: Optional[Tensor]
+        self,
+        x_num: Optional[Tensor],
+        x_cat: Optional[Tensor],
+        feature_names: Optional[List[str]] = None
     ) -> Dict[str, float]:
         """
         Calcule l'importance des features basée sur l'attention CLS.
@@ -90,11 +91,14 @@ class FTTPlusModelWrapper:
         Args:
             x_num: Features numériques
             x_cat: Features catégorielles
+            feature_names: Noms des features (utilise self.feature_names si None)
             
         Returns:
             Dict mapping feature_name -> importance_score
         """
-        return self.model.get_cls_importance(x_num, x_cat, self.feature_names)
+        # Utiliser feature_names fourni ou celui du wrapper
+        names_to_use = feature_names if feature_names is not None else self.feature_names
+        return self.model.get_cls_importance(x_num, x_cat, names_to_use)
     
     def get_attention_heatmap(
         self, 
