@@ -334,7 +334,25 @@ class FTTPlusPlusPipeline:
     def _save_complete_results(self, results: Dict):
         """Sauvegarde les résultats complets du pipeline."""
         save_path = self.results_dir / 'ftt_plus_plus_results.json'
-        
+
+        def to_serializable(obj):
+            import numpy as np
+            import torch
+            if isinstance(obj, dict):
+                return {k: to_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [to_serializable(v) for v in obj]
+            elif isinstance(obj, (np.integer, np.int32, np.int64)):
+                return int(obj)
+            elif isinstance(obj, (np.floating, np.float32, np.float64)):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, torch.Tensor):
+                return obj.cpu().detach().numpy().tolist()
+            else:
+                return obj
+
         # Préparer les données à sauvegarder (exclure les modèles)
         save_data = {
             'pipeline_config': {
@@ -348,8 +366,10 @@ class FTTPlusPlusPipeline:
             'feature_importance_evolution': results['feature_importance_evolution'],
             'comparison': results['comparison']
         }
-        
+
+        save_data = to_serializable(save_data)
+
         with open(save_path, 'w', encoding='utf-8') as f:
             json.dump(save_data, f, indent=2, ensure_ascii=False)
-        
+
         print(f"💾 Résultats complets sauvegardés: {save_path}")
