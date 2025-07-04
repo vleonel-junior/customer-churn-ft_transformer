@@ -168,6 +168,9 @@ class FTTPlusModelWrapper:
             y_train=y_train if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
         )
         
+        # S'assurer que l'embedding est sur le bon device
+        num_embedding = num_embedding.to(self.device)
+        
         self.model.feature_tokenizer.num_tokenizer = num_embedding
     
     def get_model_info(self) -> Dict[str, Any]:

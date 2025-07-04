@@ -138,14 +138,20 @@ if __name__ == '__main__':
     test_performance = evaluate(model, 'test', X, y, seed)
 
     # Analyse d'interprétabilité automatique
+    feature_names = ['tenure', 'MonthlyCharges', 'TotalCharges', 'gender', 'SeniorCitizen', 'Partner', 'Dependents',
+                     'PhoneService', 'MultipleLines', 'InternetService', 'OnlineSecurity', 'OnlineBackup',
+                     'DeviceProtection', 'TechSupport', 'StreamingTV', 'StreamingMovies', 'Contract',
+                     'PaperlessBilling', 'PaymentMethod']
+    
     analyze_interpretability(
         model=model, X=X, y=y, model_name='interpretable_ftt_plus', seed=seed,
-        model_config={'n_num_features': n_num_features, 'cat_cardinalities': cat_cardinalities, 
-                     'd_token': d_token, 'n_blocks': 2, 'attention_dropout': 0.1, 
+        model_config={'n_num_features': n_num_features, 'cat_cardinalities': cat_cardinalities,
+                     'd_token': d_token, 'n_blocks': 2, 'attention_dropout': 0.1,
                      'ffn_d_hidden': 128, 'ffn_dropout': 0.1, 'residual_dropout': 0.1, 'embedding_type': embedding_type},
-        training_results={'train_losses': train_loss_list, 'val_losses': val_loss_list, 
+        training_results={'train_losses': train_loss_list, 'val_losses': val_loss_list,
                          'best_epoch': best_epoch, 'best_val_loss': best_val_loss},
         performance_results={'val': val_performance, 'test': test_performance},
+        feature_names=feature_names,
         local_output_dir=output_dir
     )
     
