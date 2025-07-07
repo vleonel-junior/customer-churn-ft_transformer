@@ -154,16 +154,9 @@ if __name__ == '__main__':
                          'best_epoch': best_epoch, 'best_val_loss': best_val_loss},
         performance_results={'val': val_performance, 'test': test_performance},
         feature_names=feature_names,
-        local_output_dir=output_dir
+        local_output_dir=output_dir,
+        results_base_dir=output_dir
     )
 
-    # Nettoyage des fichiers parasites à la racine du dossier results
-    for unwanted in [
-        f"{output_dir}/best_model.pt",
-        f"{output_dir}/training_results.npy",
-        f"{output_dir}/ftt_plus_plus_results.json"
-    ]:
-        if os.path.exists(unwanted):
-            os.remove(unwanted)
 
     print("Entraînement terminé!")
