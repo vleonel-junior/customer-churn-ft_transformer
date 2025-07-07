@@ -1,184 +1,118 @@
-# FT-Transformer pour la Prédiction de Churn Client
+# FTT+ & FTT++ : Interprétabilité avancée des Transformers pour données tabulaires
 
-Ce projet implémente plusieurs variantes de Feature Tokenizer Transformer (FT-Transformer) pour la prédiction de churn client, avec un focus sur l'interprétabilité et l'optimisation des performances.
+---
 
-## 🏗️ Architecture des Modèles
+## Présentation
 
-### **FTT (Standard)**
-- **Description** : Implémentation de base du FT-Transformer
-- **Caractéristiques** : Architecture Transformer classique avec tokenisation des features
-- **Usage** : Modèle de référence pour comparaisons
+Ce dépôt propose une étude complète et des implémentations professionnelles de deux architectures innovantes pour l’apprentissage sur données tabulaires : **FTT+** (FT-Transformer Plus) et **FTT++** (FT-Transformer Plus Plus), inspirées des travaux de Tokimasa Isomura et al. L’objectif est de concilier **performance** et **interprétabilité**, deux enjeux majeurs pour l’IA appliquée aux données structurées.
 
-### **FTT+ (Interprétable)**
-- **Description** : Extension interprétable du FT-Transformer avec mécanismes d'attention analysables
-- **Caractéristiques** :
-  - Token CLS pour l'importance des features
-  - Extraction des matrices d'attention
-  - Heatmaps d'interactions complètes
-- **Usage** : Analyse d'interprétabilité et sélection de features
+---
 
-### **FTT++ (Sparse + Optimisé)**
-- **Description** : Pipeline en deux étapes combinant FTT+ et modèle Random avec attention sparse
-- **Caractéristiques** :
-  - **Étape 1** : Entraînement FTT+ → Sélection des M features les plus importantes
-  - **Étape 2** : Modèle Random avec k interactions aléatoires sur features sélectionnées
-  - Attention sparse pour réduction de complexité
-- **Usage** : Modèle optimisé pour production avec interprétabilité maintenue
+## 1. FTT+ : Transformer interprétable pour données tabulaires
 
-## 📊 Dataset
+### Principe
 
-**Telecom Customer Churn** : Dataset de télécommunications avec 19 features (3 numériques, 16 catégorielles) pour prédire le churn client.
+FTT+ adapte le mécanisme des Transformers (issus du NLP) aux spécificités des données tabulaires, en introduisant :
 
-**Features** :
-- Numériques : `tenure`, `MonthlyCharges`, `TotalCharges`
-- Catégorielles : `gender`, `SeniorCitizen`, `Partner`, `Contract`, `PaymentMethod`, etc.
+- **Tokenisation des features** : chaque variable (numérique ou catégorielle) est encodée en vecteur dense via un `FeatureTokenizer`, produisant une séquence uniforme de tokens.
+- **Ajout du token CLS** : un vecteur spécial, appris, est concaténé en tête de séquence. Il sert de point de collecte de l’information globale, à la manière de BERT.
+- **Attention sélective et parcimonieuse** : l’attention n’est calculée qu’entre le token CLS et les features (dans les deux sens), excluant les interactions feature↔feature et l’auto-attention. Cela limite le surapprentissage et cible les relations vraiment utiles.
+- **Partage de la matrice Value (V) entre toutes les têtes** : innovation clé pour garantir que la moyenne des scores d’attention reflète directement l’importance réelle de chaque feature.
+- **Moyenne des matrices d’attention** : la matrice d’attention finale, moyennée sur les têtes, est exploitée pour l’interprétabilité (importance des features, visualisations…).
 
-## 🚀 Utilisation
+### Pipeline d’un bloc FTT+
 
-### **Entraînement FTT**
-```bash
-python train/Telecom/train_ftt/train.py
-```
+1. **Tokenisation** des features + ajout du token CLS.
+2. **Projection Q/K/V** : Q et K spécifiques à chaque tête, V partagée.
+3. **Calcul des scores d’attention** (scaled dot-product, normalisé par √d_head).
+4. **Application du masque** : seules les interactions CLS↔features sont autorisées.
+5. **Softmax** sur les scores masqués → poids d’attention.
+6. **Somme pondérée** des valeurs V selon les poids d’attention.
+7. **Connexion résiduelle, normalisation, Feed-Forward, skip connection**.
+8. **Sortie** : représentation enrichie de chaque token + matrice d’attention interprétable.
 
-### **Entraînement FTT+**
-```bash
-python train/Telecom/train_ftt_plus/train.py
-```
+### Intérêt
 
-### **Entraînement FTT++**
-```bash
-# Configuration de base
-python train/Telecom/train_ftt_plus_plus/train.py
+- **Interprétabilité directe** : importance des features accessible via la matrice d’attention.
+- **Réduction du surapprentissage** : attention parcimonieuse adaptée aux données tabulaires.
+- **Performance** : architecture robuste, inspirée de RTDL, adaptée à la nature des données structurées.
 
-# Configuration personnalisée
-python train/Telecom/train_ftt_plus_plus/train.py \
-    --embedding_type "Q-LR" \
-    --M 12 \
-    --k 6 \
-    --stage1_epochs 75 \
-    --stage2_epochs 50 \
-    --lr 0.0005 \
-    --seed 42
-```
+---
 
-### **Depuis Kaggle**
-```python
-import os
-os.chdir('/kaggle/working/customer-churn-ft_transformer')
+## 2. FTT++ : Sélection de features et attention randomisée
 
-!PYTHONPATH=/kaggle/working/customer-churn-ft_transformer \
-    python train/Telecom/train_ftt_plus_plus/train.py \
-    --embedding_type "Q-LR" --M 15 --k 8
-```
+### Principe
 
-## ⚙️ Paramètres
+FTT++ va plus loin en combinant :
 
-### **Paramètres FTT++**
-| Paramètre | Description | Défaut |
-|-----------|-------------|---------|
-| `--M` | Nombre de features à sélectionner | 10 |
-| `--k` | Nombre d'interactions aléatoires | 5 |
-| `--embedding_type` | Type d'embedding numérique | "LR" |
-| `--stage1_epochs` | Époques pour FTT+ | 50 |
-| `--stage2_epochs` | Époques pour Random | 50 |
-| `--lr` | Taux d'apprentissage | 1e-3 |
-| `--d_token` | Dimension des tokens | 64 |
-| `--n_blocks` | Nombre de blocs Transformer | 2 |
+1. **Étape 1 : Entraînement d’un FTT+**
+   - On entraîne un modèle FTT+ sur l’ensemble des données.
+   - On extrait les scores d’importance des features via la matrice d’attention CLS↔features.
+   - On sélectionne les M features les plus importantes (M = hyperparamètre).
 
-### **Types d'Embedding**
-- `"LR"` : Linear + ReLU (défaut)
-- `"Q-LR"` : Quantile + Linear + ReLU
-- `"T"`, `"T-L"`, `"T-LR"`, `"T-LR-LR"` : Embeddings supervisés
+2. **Étape 2 : Entraînement d’un modèle Random sparse**
+   - On entraîne un modèle à attention randomisée sur les M features sélectionnées.
+   - L’attention est calculée :
+     - Entre le token CLS et chaque feature sélectionnée (comme FTT+)
+     - Pour k paires de features choisies aléatoirement (k = hyperparamètre)
+     - L’auto-attention reste interdite.
 
-## 📈 Résultats et Visualisations
+### Intérêt
 
-### **Métriques Générées**
-- ROC-AUC, PR-AUC, Accuracy, F1-Score
-- Matthews Correlation Coefficient (MCC)
-- Sensitivity, Specificity, Cohen's Kappa
+- **Focalisation sur les variables clés** : la sélection de features maximise la pertinence de l’attention.
+- **Simplicité et robustesse** : l’attention randomisée limite la complexité tout en explorant des interactions internes.
+- **Interprétabilité accrue** : chaque étape fournit des scores d’importance exploitables pour l’analyse.
 
-### **Visualisations Automatiques**
-- **Graphiques d'importance** : Features les plus influentes
-- **Heatmaps d'attention** : Interactions feature-to-feature complètes
-- **Comparaisons FTT+ vs Random** : Évolution de l'importance des features
+---
 
-### **Fichiers Sauvegardés**
-```
-results/results_telecom/
-├── métriques/
-│   ├── *_model_performance_metrics_seed_*.json
-│   └── *_feature_importance_analysis_seed_*.json
-├── heatmaps/
-│   ├── *_feature_importance_chart_seed_*.png
-│   └── *_attention_heatmap_seed_*.png
-└── best_models/
-    └── *_trained_model_weights_seed_*.pt
-```
-
-## 🔧 Structure du Projet
+## 3. Structure du dépôt
 
 ```
-.
-├── ftt_plus/                    # FTT+ Interprétable
-│   ├── model.py                 # Architecture du modèle
-│   ├── attention.py             # Mécanismes d'attention
-│   └── visualisation.py         # Visualisations FTT+
-├── ftt_plus_plus/               # FTT++ Pipeline
-│   ├── pipeline.py              # Orchestration complète
-│   ├── training_stages.py       # Étapes d'entraînement
-│   ├── random_model.py          # Modèle Random avec attention sparse
-│   ├── config.py                # Configurations
-│   └── visualisation.py         # Visualisations FTT++
-├── train/Telecom/               # Scripts d'entraînement
-│   ├── train_ftt/
-│   ├── train_ftt_plus/
-│   └── train_ftt_plus_plus/
-├── data/                        # Traitement des données
-├── rtdl_lib/                    # Bibliothèque RTDL
-└── interpretability_analyzer.py # Analyseur d'interprétabilité générique
+ftt_plus/
+    attention.py         # Mécanismes d'attention sélective et interprétable
+    model.py             # Architecture FTT+ complète (tokenizer, CLS, blocs, head)
+    visualisation.py     # Outils de visualisation (barplots, heatmaps)
+
+ftt_plus_plus/
+    config/              # Configurations et mapping des features
+    core/                # Modèles FTT+, random sparse, attention
+    training/            # Scripts d'entraînement pour chaque étape
+    pipeline/            # Orchestration complète FTT++
+    visualisation/       # Visualisations avancées FTT++
+    __init__.py          # Import centralisé des composants
 ```
 
-## 🎯 Pipeline FTT++ Détaillé
+---
 
-### **Étape 1 : Entraînement FTT+**
-1. Entraînement complet du modèle FTT+ sur toutes les features
-2. Analyse d'interprétabilité avec extraction des scores d'importance
-3. Sélection des M features les plus importantes
-4. Génération des visualisations (graphiques + heatmaps)
+## 4. Visualisation & Interprétabilité
 
-### **Étape 2 : Modèle Random**
-1. Création du modèle Random sur les M features sélectionnées
-2. Génération de k interactions feature-feature aléatoires
-3. Entraînement avec attention sparse
-4. Analyse comparative des performances et interprétabilité
+- **Barplots d’importance** : importance des features selon l’attention CLS.
+- **Heatmaps d’interactions** : matrice d’attention complète pour analyse fine.
+- **Export des scores** : pour reporting, audit, ou intégration métier.
 
-### **Avantages FTT++**
-- **Réduction de complexité** : Attention sparse sur features sélectionnées
-- **Maintien de l'interprétabilité** : Heatmaps et importance des features
-- **Performances optimisées** : Pipeline en deux étapes
-- **Reproductibilité** : Gestion des seeds et configurations
+---
 
-## 📋 Prérequis
+## 5. Pourquoi cette étude ?
 
-```bash
-pip install torch torchvision
-pip install numpy pandas matplotlib seaborn
-pip install scikit-learn
-pip install zero  # Pour les data loaders
-```
+- **Comprendre et expliquer les décisions des modèles tabulaires** : enjeu crucial en entreprise (banque, assurance, santé…).
+- **Allier performance et transparence** : lever le « black box effect » des réseaux profonds.
+- **Proposer des outils réutilisables et adaptables** : code modulaire, visualisations prêtes à l’emploi.
 
-## 🔬 Analyse d'Interprétabilité
+---
 
-Le système d'analyse d'interprétabilité est automatiquement déclenché et génère :
+## 6. Références
 
-1. **Scores d'importance CLS → Features**
-2. **Matrices d'attention complètes**
-3. **Heatmaps d'interactions**
-4. **Comparaisons entre modèles**
-5. **Statistiques de sparsité**
+- Vaswani, A., Shazeer, N., Parmar, N., et al. (2017). *Attention Is All You Need*. NeurIPS.
+- Isomura, T., Shimizu, R., & Goto, M. (2023). *Optimizing FT-Transformer: Sparse Attention for Improved Performance and Interpretability*.
+- Gorishniy, Y., Rubachev, I., Khrulkov, V., & Babenko, A. (2021). *Revisiting Deep Learning Models for Tabular Data*.
+- Devlin, J., et al. (2018). *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding*.
 
-L'analyseur supporte tous les modèles FTT et adapte automatiquement les visualisations selon le type de modèle.
+---
 
-## 📝 Citation
+## 7. Auteur
 
-Ce projet implémente et étend les concepts du FT-Transformer pour l'interprétabilité et l'optimisation des performances sur des données tabulaires de churn client.
+Léonel VODOUNOU  
+FTT+ / FTT++ – Interprétabilité avancée pour données tabulaires  
+2025
+
+---
