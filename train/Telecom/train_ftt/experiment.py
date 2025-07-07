@@ -11,6 +11,8 @@ import torch
 import zero
 from train_funct import train, val, evaluate
 from data.process_telecom_data import device, get_data
+import sys
+sys.path.append('../../../rtdl_lib')
 import rtdl
 
 # Paramètres de base
