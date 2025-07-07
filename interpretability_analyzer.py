@@ -112,8 +112,8 @@ class InterpretabilityAnalyzer:
         )
         
         # Heatmap d'attention
-        # Affichage de la matrice d'attention full désactivé pour ftt_plus
-        if "ftt_plus_plus" in model_name:
+        # Générer la heatmap d'attention uniquement pour les modèles finaux ftt_plus_plus
+        if "ftt_plus_plus" in model_name and "ftt_plus_from_ftt_plus_plus" not in model_name:
             self._try_visualization(
                 [('ftt_plus_plus.visualisation', 'visualize_sparse_attention_heatmap')],
                 model=model,
@@ -127,23 +127,14 @@ class InterpretabilityAnalyzer:
     
     def _try_visualization(self, functions_to_try: List, *args, **kwargs):
         """Essaie les fonctions de visualisation jusqu'à en trouver une qui marche."""
-        called = False
         for module_name, func_name in functions_to_try:
             try:
                 module = __import__(module_name, fromlist=[func_name])
                 func = getattr(module, func_name)
-                print(f"[DEBUG] Tentative d'appel de {module_name}.{func_name}")
                 func(*args, **kwargs)
-                called = True
                 return
-            except (ImportError, AttributeError) as e:
-                print(f"[DEBUG] Echec import ou appel {module_name}.{func_name} : {e}")
+            except (ImportError, AttributeError):
                 continue
-        if not called:
-            raise RuntimeError(
-                f"Aucune fonction de visualisation n'a pu être appelée parmi : "
-                f"{[f'{m}.{f}' for m, f in functions_to_try]}"
-            )
     
     def _save_model(self, model_name: str, seed: int, model):
         """Sauvegarde le modèle."""
