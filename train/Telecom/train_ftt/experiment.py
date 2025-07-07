@@ -24,10 +24,25 @@ metrics_dir = "results/results_telecom/métriques/"
 os.makedirs(metrics_dir, exist_ok=True)
 
 # (Optionnel) Grid search sur d'autres hyperparamètres
-grid = [
-    {"lr": 0.001, "weight_decay": 0.0},
-    # Ajouter d'autres configs ici si besoin
-]
+from itertools import product
+
+param_grid = {
+    "lr": [0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.008, 0.01, 0.02, 0.05],
+    "weight_decay": [0.0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
+    "batch_size": [16, 32, 48, 64, 96, 128, 192, 256],
+    "n_epochs": [30, 50, 75, 100, 150, 200],
+    "d_token": [32, 64, 96, 128, 192, 256, 384],
+    "n_blocks": [1, 2, 3, 4, 5, 6, 8],
+    "attention_n_heads": [2, 4, 6, 8, 12, 16],
+    "attention_dropout": [0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4],
+    "ffn_d_hidden": [64, 128, 256, 384, 512, 768, 1024],
+    "ffn_dropout": [0.0, 0.05, 0.1, 0.15, 0.2, 0.3],
+    "residual_dropout": [0.0, 0.05, 0.1, 0.15, 0.2],
+    "embedding_type": ["linear", "mlp", "sinusoidal", "learnable"],
+}
+
+keys, values = zip(*param_grid.items())
+grid = [dict(zip(keys, v)) for v in product(*values)]
 
 for grid_idx, grid_params in enumerate(grid):
     all_results = []
@@ -69,10 +84,10 @@ for grid_idx, grid_params in enumerate(grid):
                 best_metrics = matrix
 
         # Enregistrement des métriques pour ce seed
+        # Enregistrer tous les hyperparamètres du grid pour cette config
         result = {
             "seed": seed,
-            "lr": grid_params["lr"],
-            "weight_decay": grid_params["weight_decay"],
+            **grid_params,
             "roc_auc": best_metrics[0],
             "pr_auc": best_metrics[1],
             "acc": best_metrics[2],
