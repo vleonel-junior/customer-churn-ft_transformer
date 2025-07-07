@@ -134,10 +134,9 @@ def main():
     else:
         output_dir = args.results_dir
     import os
-    os.makedirs(output_dir, exist_ok=True)
     os.makedirs(f"{output_dir}/heatmaps", exist_ok=True)
     os.makedirs(f"{output_dir}/best_models", exist_ok=True)
-    os.makedirs(f"{output_dir}/metriques", exist_ok=True)
+    os.makedirs(f"{output_dir}/métriques", exist_ok=True)
 
     print("=== ENTRAÎNEMENT FTT++ MODULAIRE - DATASET TELECOM ===")
 

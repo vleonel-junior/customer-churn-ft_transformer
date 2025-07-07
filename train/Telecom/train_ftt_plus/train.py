@@ -21,10 +21,9 @@ if __name__ == '__main__':
 
     # Créer le dossier de sortie si nécessaire
     output_dir = f'results/results_telecom/seed_{seed}'
-    os.makedirs(output_dir, exist_ok=True)
     os.makedirs(f"{output_dir}/heatmaps", exist_ok=True)
     os.makedirs(f"{output_dir}/best_models", exist_ok=True)
-    os.makedirs(f"{output_dir}/metriques", exist_ok=True)
+    os.makedirs(f"{output_dir}/métriques", exist_ok=True)
 
     print(f"Utilisation du device: {device}")
     print(f"Seed: {seed}")
@@ -157,5 +156,14 @@ if __name__ == '__main__':
         feature_names=feature_names,
         local_output_dir=output_dir
     )
-    
+
+    # Nettoyage des fichiers parasites à la racine du dossier results
+    for unwanted in [
+        f"{output_dir}/best_model.pt",
+        f"{output_dir}/training_results.npy",
+        f"{output_dir}/ftt_plus_plus_results.json"
+    ]:
+        if os.path.exists(unwanted):
+            os.remove(unwanted)
+
     print("Entraînement terminé!")
