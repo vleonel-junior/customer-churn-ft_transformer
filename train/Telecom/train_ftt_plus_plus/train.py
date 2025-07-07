@@ -7,7 +7,7 @@ Ce script implémente l'entraînement complet du pipeline FTT++ en deux étapes 
 
 Usage:
     python train.py --M 10 --k 5 --seed 0
-    python train.py --M 15 --k 8 --stage1_epochs 100 --stage2_epochs 50
+    python train.py --M 15 --k 8 --stage1_epochs 100 --stage2_epochs 100 --lr 1e-3 --batch_size 64 --patience 20
 """
 
 import argparse
@@ -31,17 +31,17 @@ def parse_arguments():
     # Paramètres d'entraînement
     parser.add_argument('--seed', type=int, default=0,
                        help='Seed pour la reproductibilité (défaut: 0)')
-    parser.add_argument('--stage1_epochs', type=int, default=50,
-                       help='Époques pour l\'étape 1 (FTT+) (défaut: 50)')
-    parser.add_argument('--stage2_epochs', type=int, default=50,
-                       help='Époques pour l\'étape 2 (Random) (défaut: 50)')
+    parser.add_argument('--stage1_epochs', type=int, default=100,
+                       help='Époques pour l\'étape 1 (FTT+) (défaut: 100)')
+    parser.add_argument('--stage2_epochs', type=int, default=100,
+                       help='Époques pour l\'étape 2 (Random) (défaut: 100)')
     parser.add_argument('--lr', type=float, default=1e-3,
                        help='Taux d\'apprentissage (défaut: 1e-3)')
     parser.add_argument('--batch_size', type=int, default=64,
                        help='Taille des batches (défaut: 64)')
-    parser.add_argument('--patience', type=int, default=10,
-                       help='Patience pour early stopping (défaut: 10)')
-    
+    parser.add_argument('--patience', type=int, default=20,
+                       help='Patience pour early stopping (défaut: 20)')
+
     # Configuration du modèle
     parser.add_argument('--d_token', type=int, default=64,
                        help='Dimension des tokens (défaut: 64)')
@@ -59,8 +59,8 @@ def parse_arguments():
                        help='Forcer l\'utilisation du CPU même si GPU disponible')
     
     # Paramètres de sauvegarde
-    parser.add_argument('--results_dir', type=str, default='results/results_telecom',
-                       help='Répertoire de sauvegarde (défaut: results/results_telecom)')
+    parser.add_argument('--results_dir', type=str, default='results/results_telecom/ftt_plus_plus',
+                       help='Répertoire de sauvegarde (défaut: results/results_telecom/ftt_plus_plus)')
     parser.add_argument('--save_intermediate', action='store_true',
                        help='Sauvegarder les résultats intermédiaires')
     

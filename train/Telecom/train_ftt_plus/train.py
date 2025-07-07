@@ -15,12 +15,12 @@ if __name__ == '__main__':
     lr = 0.001
     weight_decay = 0.0
     batch_size = 64
-    n_epochs = 50
+    n_epochs = 100
     seed = 0
-    patience = 10  # Early stopping
+    patience = 20  # Early stopping
 
     # Créer le dossier de sortie si nécessaire
-    output_dir = f'./outputs/seed_{seed}'
+    output_dir = f'results/results_telecom/ftt_plus/seed_{seed}'
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Utilisation du device: {device}")
