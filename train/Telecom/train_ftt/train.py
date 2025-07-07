@@ -145,9 +145,27 @@ if __name__ == '__main__':
         'val_performance': val_performance
     }
     
-    np.save(f'{output_dir}/métriques/ftt_training_results.npy', results)
+    # Sauvegarde des résultats au format JSON lisible
+    import json
+    metric_names = [
+        "roc_auc", "pr_auc", "accuracy", "balanced_accuracy", "mcc",
+        "sensitivity", "specificity", "precision", "f1", "cohen_kappa"
+    ]
+    def to_named_dict(values):
+        if isinstance(values, dict):
+            return values
+        return {name: float(val) for name, val in zip(metric_names, values)}
+    results_json = {
+        'train_losses': train_loss_list,
+        'val_losses': val_loss_list,
+        'best_epoch': best_epoch,
+        'best_val_loss': best_val_loss,
+        'test_performance': to_named_dict(test_performance),
+        'val_performance': to_named_dict(val_performance)
+    }
+    with open(f'{output_dir}/métriques/ftt_training_results.json', 'w', encoding='utf-8') as f:
+        json.dump(results_json, f, indent=2, ensure_ascii=False)
     torch.save(model.state_dict(), f'{output_dir}/best_models/ftt_best_model.pt')
-
 
     print(f"\nRésultats sauvegardés dans {output_dir}/")
     print("Entraînement terminé!")
