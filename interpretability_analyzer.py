@@ -67,14 +67,23 @@ class InterpretabilityAnalyzer:
     
     def _save_metrics(self, model_name: str, seed: int, model_config: Dict, training_results: Dict, performance_results: Dict, model):
         """Sauvegarde les métriques de performance."""
+        # Définition des noms de métriques selon la fonction performance utilisée
+        metric_names = [
+            "roc_auc", "pr_auc", "accuracy", "balanced_accuracy", "mcc",
+            "sensitivity", "specificity", "precision", "f1", "cohen_kappa"
+        ]
+        def to_named_dict(values):
+            if isinstance(values, dict):
+                return values
+            return {name: float(val) for name, val in zip(metric_names, values)}
         data = {
             'model_name': model_name,
             'seed': seed,
             'model_config': model_config,
             'training': {**training_results, 'n_parameters': sum(p.numel() for p in model.parameters())},
             'performance': {
-                'val': performance_results['val'],
-                'test': performance_results['test']
+                'val': to_named_dict(performance_results['val']),
+                'test': to_named_dict(performance_results['test'])
             }
         }
         
