@@ -333,7 +333,7 @@ class FTTPlusPlusPipeline:
     
     def _save_complete_results(self, results: Dict):
         """Sauvegarde les résultats complets du pipeline."""
-        save_path = self.results_dir / 'ftt_plus_plus_results.json'
+        save_path = self.results_dir / 'métriques' / 'ftt_plus_plus_results.json'
 
         def to_serializable(obj):
             import numpy as np
