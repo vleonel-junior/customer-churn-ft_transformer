@@ -59,8 +59,8 @@ def parse_arguments():
                        help='Forcer l\'utilisation du CPU même si GPU disponible')
     
     # Paramètres de sauvegarde
-    parser.add_argument('--results_dir', type=str, default='results/results_telecom/ftt_plus_plus',
-                       help='Répertoire de sauvegarde (défaut: results/results_telecom/ftt_plus_plus)')
+    parser.add_argument('--results_dir', type=str, default=None,
+                       help='Répertoire de sauvegarde (défaut: results/results_telecom/seed_{seed})')
     parser.add_argument('--save_intermediate', action='store_true',
                        help='Sauvegarder les résultats intermédiaires')
     
@@ -128,20 +128,30 @@ def create_ftt_plus_plus_config(args) -> FTTPlusPlusConfig:
 def main():
     """Fonction principale."""
     args = parse_arguments()
-    
+    # Définir le dossier centralisé
+    if args.results_dir is None:
+        output_dir = f"results/results_telecom/seed_{args.seed}"
+    else:
+        output_dir = args.results_dir
+    import os
+    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(f"{output_dir}/heatmaps", exist_ok=True)
+    os.makedirs(f"{output_dir}/best_models", exist_ok=True)
+    os.makedirs(f"{output_dir}/metriques", exist_ok=True)
+
     print("=== ENTRAÎNEMENT FTT++ MODULAIRE - DATASET TELECOM ===")
-    
+
     # Configuration du device
     device = setup_device(args)
-    
+
     # Charger les données
     print(f"Chargement des données (seed: {args.seed})")
     X, y, cat_cardinalities = get_data(args.seed)
-    
+
     print(f"Features numériques: {X['train'][0].shape[1]}")
     print(f"Features catégorielles: {len(cat_cardinalities)}")
     print(f"Échantillons: train={len(y['train'])}, val={len(y['val'])}, test={len(y['test'])}")
-    
+
     # Créer le mapping des features pour le dataset Telecom
     feature_mapping = FeatureMapping.create_mapping(
         num_feature_names=['tenure', 'MonthlyCharges', 'TotalCharges'],
@@ -153,13 +163,14 @@ def main():
             'Contract', 'PaperlessBilling', 'PaymentMethod'
         ]
     )
-    
+
     # Créer la configuration
+    args.results_dir = output_dir
     config = create_ftt_plus_plus_config(args)
-    
+
     # Créer et exécuter le pipeline (gère tout : entraînement, analyse, sauvegarde)
     pipeline = FTTPlusPlusPipeline(config, feature_mapping)
-    
+
     pipeline.run_complete_pipeline(
         X=X,
         y=y,
@@ -175,7 +186,11 @@ def main():
         patience=args.patience,
         seed=args.seed,
         embedding_type=args.embedding_type,
-        device=device
+        device=device,
+        heatmaps_dir=f"{output_dir}/heatmaps",
+        best_models_dir=f"{output_dir}/best_models",
+        metriques_dir=f"{output_dir}/metriques",
+        prefix="ftt_plus_plus"
     )
 
 

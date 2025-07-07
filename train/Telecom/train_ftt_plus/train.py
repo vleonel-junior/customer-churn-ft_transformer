@@ -20,8 +20,11 @@ if __name__ == '__main__':
     patience = 20  # Early stopping
 
     # Créer le dossier de sortie si nécessaire
-    output_dir = f'results/results_telecom/ftt_plus/seed_{seed}'
+    output_dir = f'results/results_telecom/seed_{seed}'
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(f"{output_dir}/heatmaps", exist_ok=True)
+    os.makedirs(f"{output_dir}/best_models", exist_ok=True)
+    os.makedirs(f"{output_dir}/metriques", exist_ok=True)
 
     print(f"Utilisation du device: {device}")
     print(f"Seed: {seed}")
@@ -152,7 +155,11 @@ if __name__ == '__main__':
                          'best_epoch': best_epoch, 'best_val_loss': best_val_loss},
         performance_results={'val': val_performance, 'test': test_performance},
         feature_names=feature_names,
-        local_output_dir=output_dir
+        local_output_dir=output_dir,
+        heatmaps_dir=f"{output_dir}/heatmaps",
+        best_models_dir=f"{output_dir}/best_models",
+        metriques_dir=f"{output_dir}/metriques",
+        prefix="ftt_plus"
     )
     
     print("Entraînement terminé!")
