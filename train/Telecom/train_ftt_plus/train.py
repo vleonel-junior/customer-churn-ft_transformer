@@ -155,11 +155,7 @@ if __name__ == '__main__':
                          'best_epoch': best_epoch, 'best_val_loss': best_val_loss},
         performance_results={'val': val_performance, 'test': test_performance},
         feature_names=feature_names,
-        local_output_dir=output_dir,
-        heatmaps_dir=f"{output_dir}/heatmaps",
-        best_models_dir=f"{output_dir}/best_models",
-        metriques_dir=f"{output_dir}/metriques",
-        prefix="ftt_plus"
+        local_output_dir=output_dir
     )
     
     print("Entraînement terminé!")

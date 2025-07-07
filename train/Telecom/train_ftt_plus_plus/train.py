@@ -186,11 +186,7 @@ def main():
         patience=args.patience,
         seed=args.seed,
         embedding_type=args.embedding_type,
-        device=device,
-        heatmaps_dir=f"{output_dir}/heatmaps",
-        best_models_dir=f"{output_dir}/best_models",
-        metriques_dir=f"{output_dir}/metriques",
-        prefix="ftt_plus_plus"
+        device=device
     )
 
 
