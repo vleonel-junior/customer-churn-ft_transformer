@@ -61,9 +61,11 @@ if __name__ == '__main__':
     embedding_type = "P-LR-LR"
     print(f"Type d'embedding numérique: {embedding_type}")
 
+    # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings
+    X_train_cpu = X['train'][0].cpu()
     num_embedding = get_num_embedding(
         embedding_type=embedding_type,
-        X_train=X['train'][0],
+        X_train=X_train_cpu,
         d_embedding=d_token,
         y_train=y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
     )
