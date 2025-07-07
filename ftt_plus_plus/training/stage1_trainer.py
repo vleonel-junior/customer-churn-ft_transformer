@@ -148,9 +148,11 @@ class Stage1Trainer:
         
         # Embedding numérique personnalisé
         print(f"Type d'embedding numérique: {embedding_type}")
+        # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings
+        X_train_cpu = X['train'][0].cpu()
         model_ftt_plus.configure_num_embedding(
             embedding_type=embedding_type,
-            X_train=X['train'][0],
+            X_train=X_train_cpu,
             d_embedding=self.ftt_plus_config['d_token'],
             y_train=y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
         )
