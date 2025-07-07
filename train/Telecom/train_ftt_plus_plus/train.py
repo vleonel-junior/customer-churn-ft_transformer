@@ -130,7 +130,7 @@ def main():
     args = parse_arguments()
     # Définir le dossier centralisé
     if args.results_dir is None:
-        output_dir = f"results/results_telecom/seed_{args.seed}"
+        output_dir = f"results/results_telecom/ftt_plus_plus/seed_{args.seed}"
     else:
         output_dir = args.results_dir
     import os

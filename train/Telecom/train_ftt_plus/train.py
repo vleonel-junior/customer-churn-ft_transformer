@@ -20,7 +20,7 @@ if __name__ == '__main__':
     patience = 20  # Early stopping
 
     # Créer le dossier de sortie si nécessaire
-    output_dir = f'results/results_telecom/seed_{seed}'
+    output_dir = f'results/results_telecom/ftt_plus/seed_{seed}'
     os.makedirs(f"{output_dir}/heatmaps", exist_ok=True)
     os.makedirs(f"{output_dir}/best_models", exist_ok=True)
     os.makedirs(f"{output_dir}/métriques", exist_ok=True)
