@@ -112,16 +112,18 @@ class InterpretabilityAnalyzer:
         )
         
         # Heatmap d'attention
-        self._try_visualization(
-            [('ftt_plus_plus.visualisation', 'visualize_sparse_attention_heatmap'),
-             ('ftt_plus.visualisation', 'visualize_full_interactions')],
-            model=model,
-            x_num=X['test'][0],
-            x_cat=X['test'][1],
-            feature_names=feature_names,
-            output_path=str(self.results_dir / 'heatmaps' / f'{model_name}_attention_seed_{seed}.png'),
-            title=f'Attention - {model_name} (Seed {seed})'
-        )
+        # Affichage de la matrice d'attention full désactivé pour ftt_plus
+        if "ftt_plus_plus" in model_name:
+            self._try_visualization(
+                [('ftt_plus_plus.visualisation', 'visualize_sparse_attention_heatmap')],
+                model=model,
+                x_num=X['test'][0],
+                x_cat=X['test'][1],
+                feature_names=feature_names,
+                output_path=str(self.results_dir / 'heatmaps' / f'{model_name}_attention_seed_{seed}.png'),
+                title=f'Attention - {model_name} (Seed {seed})'
+            )
+        # Pour ftt_plus, on ne génère pas la heatmap d'attention
     
     def _try_visualization(self, functions_to_try: List, *args, **kwargs):
         """Essaie les fonctions de visualisation jusqu'à en trouver une qui marche."""
