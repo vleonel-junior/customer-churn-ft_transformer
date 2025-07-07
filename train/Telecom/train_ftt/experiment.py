@@ -86,12 +86,12 @@ for grid_idx, grid_params in enumerate(grid):
         embedding_type = grid_params["embedding_type"]
 
         # Embedding numérique personnalisé
-        X_train_cpu = X['train'][0].cpu()
+        X_train_device = X['train'][0].to(device)
         num_embedding = get_num_embedding(
             embedding_type=embedding_type,
-            X_train=X_train_cpu,
+            X_train=X_train_device,
             d_embedding=d_embedding,
-            y_train=y['train'] if embedding_type.startswith("T") else None
+            y_train=y['train'].to(device) if embedding_type.startswith("T") else None
         )
         model.feature_tokenizer.num_tokenizer = num_embedding
 
