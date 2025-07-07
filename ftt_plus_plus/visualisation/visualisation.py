@@ -147,5 +147,8 @@ def visualize_sparse_attention_heatmap(
             output_path,
             title
         )
+        print(f"[DEBUG] Matrice d'attention shape: {avg_attention.shape}")
+        print(f"[DEBUG] Feature names: {['CLS'] + feature_names}")
+        print(f"[DEBUG] Sauvegarde dans: {output_path}")
     except ImportError:
         print("Erreur: torch non disponible pour la visualisation")
