@@ -77,18 +77,17 @@ def objective(trial):
             )
 
             # Modèle FTTransformer sur le bon device
-            model = FTTransformer.make_default(
+            model = FTTransformer.make_baseline(
                 n_num_features=X['train'][0].shape[1],
                 cat_cardinalities=cat_cardinalities,
-                last_layer_query_idx=[-1],
-                d_out=1,
-                n_blocks=n_layers,
                 d_token=d_embedding,
+                n_blocks=n_layers,
                 attention_dropout=attention_dropout,
                 ffn_d_hidden=d_embedding * 2,
                 ffn_dropout=ffn_dropout,
                 residual_dropout=residual_dropout,
-                attention_n_heads=n_heads,
+                last_layer_query_idx=[-1],
+                d_out=1,
             )
             model.feature_tokenizer.num_tokenizer = num_embedding
             model.to(device)
