@@ -156,6 +156,12 @@ for grid_idx, grid_params in enumerate(grid):
             json.dump(result, f, indent=2, ensure_ascii=False)
         torch.save(model.state_dict(), f'{output_dir}/best_models/ftt_best_model.pt')
 
+        # Nettoyage mémoire explicite
+        del model, optimizer, num_embedding, train_loader, val_loader, X, y, cat_cardinalities
+        torch.cuda.empty_cache()
+        import gc
+        gc.collect()
+
     # Sauvegarde JSON pour ce grid complet
     json_path = os.path.join(metrics_dir, f"ftt_grid{grid_idx}_metrics.json")
     with open(json_path, "w") as f:
