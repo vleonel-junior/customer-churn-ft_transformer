@@ -279,7 +279,7 @@ class Stage1Trainer:
             model=model,
             X=X,
             y=y,
-            model_name='interpretable_ftt_plus',
+            model_name='interpretable_ftt_plus_from_ftt_plus_plus',
             seed=seed,
             model_config=model_config,
             training_results=training_results,

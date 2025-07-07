@@ -60,8 +60,7 @@ class InterpretabilityAnalyzer:
         self._generate_visualizations(model, X, feature_names, model_name, seed, cls_importance)
         self._save_model(model_name, seed, model)
         
-        if local_output_dir:
-            self._save_local(local_output_dir, training_results, performance_results, cls_importance, model)
+        # Suppression de la sauvegarde locale pour éviter les fichiers parasites
         
         self._print_summary(model_name, seed)
         return interpretability_results
