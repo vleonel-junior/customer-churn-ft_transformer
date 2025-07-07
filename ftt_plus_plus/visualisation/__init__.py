@@ -6,4 +6,4 @@ Ce module contient les fonctions de visualisation :
 - Graphiques d'importance
 """
 
-# Ce module sera peuplé avec les fonctions de visualisation
+from .visualisation import visualize_sparse_attention_heatmap
