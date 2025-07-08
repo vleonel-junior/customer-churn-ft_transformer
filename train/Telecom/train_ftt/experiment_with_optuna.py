@@ -13,7 +13,7 @@ import logging
 import gc
 
 # Configuration du logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 # --- Paramètres fixes ---
@@ -33,8 +33,8 @@ def to_named_dict(values):
 def objective(trial):
     """Fonction objectif optimisée pour Optuna"""
     # 1. Hyperparamètres avec espaces de recherche étendus
-    lr = trial.suggest_loguniform("lr", 1e-5, 1e-1)
-    weight_decay = trial.suggest_loguniform("weight_decay", 1e-6, 1e-1)
+    lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
+    weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     num_embedding_type = trial.suggest_categorical(
         "num_embedding_type",
         [
@@ -47,9 +47,9 @@ def objective(trial):
     n_heads = trial.suggest_categorical("n_heads", [2, 4, 8, 16])
     d_embedding = trial.suggest_categorical("d_embedding", [16, 32, 64, 128])
     n_layers = trial.suggest_int("n_layers", 1, 6)
-    attention_dropout = trial.suggest_uniform("attention_dropout", 0.0, 0.3)
-    ffn_dropout = trial.suggest_uniform("ffn_dropout", 0.0, 0.3)
-    residual_dropout = trial.suggest_uniform("residual_dropout", 0.0, 0.2)
+    attention_dropout = trial.suggest_float("attention_dropout", 0.0, 0.3)
+    ffn_dropout = trial.suggest_float("ffn_dropout", 0.0, 0.3)
+    residual_dropout = trial.suggest_float("residual_dropout", 0.0, 0.2)
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
     patience_epochs = 10
     min_delta = 1e-4
@@ -106,6 +106,7 @@ def objective(trial):
             val_loss_list = []
             best_epoch = 0
 
+            reported_steps = set()
             for epoch in range(100):
                 loss_train = train(epoch, model, optimizer, X, y, train_loader, loss_fn)
                 loss_val = val(epoch, model, X, y, val_loader, loss_fn)
@@ -114,7 +115,9 @@ def objective(trial):
 
                 scheduler.step(loss_val)
 
-                trial.report(loss_val, epoch)
+                if epoch not in reported_steps:
+                    trial.report(loss_val, epoch)
+                    reported_steps.add(epoch)
                 if trial.should_prune():
                     raise optuna.TrialPruned()
 
