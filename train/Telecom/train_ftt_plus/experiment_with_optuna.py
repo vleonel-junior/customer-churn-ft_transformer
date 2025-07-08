@@ -9,12 +9,9 @@ from train_func import train, val, evaluate
 from ftt_plus.model import InterpretableFTTPlus
 from interpretability_analyzer import analyze_interpretability
 from num_embedding_factory import get_num_embedding
-import logging
 import gc
 
 # Configuration du logging (affiche uniquement les erreurs importantes)
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
 
 # --- Paramètres fixes ---
 seeds = [0, 1, 2]
@@ -234,7 +231,24 @@ if __name__ == "__main__":
             show_progress_bar=True
         )
     except KeyboardInterrupt:
-        logger.info("Optimization interrupted by user")
+        pass
+
+    best_trial = study.best_trial
+
+    # Affichage des résultats principaux
+    print(f"Optimization completed!")
+    print(f"Best trial: {best_trial.number}")
+    print(f"Best mean AUC: {best_trial.value:.4f}")
+    print(f"Best params: {best_trial.params}")
+
+    if len(study.trials) > 10:
+        importance = optuna.importance.get_param_importances(study)
+        print("Parameter importance:")
+        for param, imp in importance.items():
+            print(f"  {param}: {imp:.4f}")
+
+        with open(os.path.join(metrics_dir, "param_importance.json"), "w") as f:
+            json.dump(importance, f, indent=2)
 
     best_trial = study.best_trial
 
@@ -260,17 +274,3 @@ if __name__ == "__main__":
 
     with open(os.path.join(metrics_dir, "all_trials_detailed.json"), "w") as f:
         json.dump(all_trials, f, indent=2)
-
-    logger.info(f"Optimization completed!")
-    logger.info(f"Best trial: {best_trial.number}")
-    logger.info(f"Best mean AUC: {best_trial.value:.4f}")
-    logger.info(f"Best params: {best_trial.params}")
-
-    if len(study.trials) > 10:
-        importance = optuna.importance.get_param_importances(study)
-        logger.info("Parameter importance:")
-        for param, imp in importance.items():
-            logger.info(f"  {param}: {imp:.4f}")
-
-        with open(os.path.join(metrics_dir, "param_importance.json"), "w") as f:
-            json.dump(importance, f, indent=2)

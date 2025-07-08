@@ -6,8 +6,8 @@ Ce script implémente l'entraînement complet du pipeline FTT++ en deux étapes 
 2. Entraînement Random → Modèle final avec attention sparse
 
 Usage:
-    python train.py --M 10 --k 5 --seed 0
-    python train.py --M 15 --k 8 --stage1_epochs 100 --stage2_epochs 100 --lr 1e-3 --batch_size 64 --patience 20
+    python train.py --M 10 --k 5 --seed 0 --lr_stage1 0.001 --weight_decay_stage1 0.01 --lr_stage2 0.0005 --weight_decay_stage2 0.02
+    python train.py --M 15 --k 8 --stage1_epochs 100 --stage2_epochs 100 --lr_stage1 1e-3 --weight_decay_stage1 0.0 --lr_stage2 1e-3 --weight_decay_stage2 0.0 --batch_size 64 --patience 20
 """
 
 import argparse
@@ -36,7 +36,15 @@ def parse_arguments():
     parser.add_argument('--stage2_epochs', type=int, default=100,
                        help='Époques pour l\'étape 2 (Random) (défaut: 100)')
     parser.add_argument('--lr', type=float, default=1e-3,
-                       help='Taux d\'apprentissage (défaut: 1e-3)')
+                       help='Taux d\'apprentissage global (défaut: 1e-3)')
+    parser.add_argument('--lr_stage1', type=float, default=1e-3,
+                       help='Taux d\'apprentissage étape 1 (défaut: 1e-3)')
+    parser.add_argument('--weight_decay_stage1', type=float, default=0.0,
+                       help='Weight decay étape 1 (défaut: 0.0)')
+    parser.add_argument('--lr_stage2', type=float, default=1e-3,
+                       help='Taux d\'apprentissage étape 2 (défaut: 1e-3)')
+    parser.add_argument('--weight_decay_stage2', type=float, default=0.0,
+                       help='Weight decay étape 2 (défaut: 0.0)')
     parser.add_argument('--batch_size', type=int, default=64,
                        help='Taille des batches (défaut: 64)')
     parser.add_argument('--patience', type=int, default=20,
@@ -100,7 +108,9 @@ def create_ftt_plus_plus_config(args) -> FTTPlusPlusConfig:
         'ffn_d_hidden': args.ffn_hidden,
         'ffn_dropout': 0.1,
         'residual_dropout': 0.1,
-        'd_out': 1
+        'd_out': 1,
+        'lr': args.lr_stage1,
+        'weight_decay': args.weight_decay_stage1
     }
     
     # Configuration Random (étape 2)
@@ -111,7 +121,9 @@ def create_ftt_plus_plus_config(args) -> FTTPlusPlusConfig:
         'ffn_d_hidden': args.ffn_hidden,
         'ffn_dropout': 0.1,
         'residual_dropout': 0.1,
-        'd_out': 1
+        'd_out': 1,
+        'lr': args.lr_stage2,
+        'weight_decay': args.weight_decay_stage2
     }
     
     return FTTPlusPlusConfig(

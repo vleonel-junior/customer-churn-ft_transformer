@@ -181,7 +181,9 @@ class Stage1Trainer:
         train_loader, val_loader = create_loaders_func(y, batch_size, device)
         
         # Optimiseur et fonction de perte
-        optimizer = torch.optim.AdamW(model.optimization_param_groups(), lr=lr, weight_decay=0.0)
+        # Récupérer le weight_decay depuis la config si présent, sinon 0.0
+        weight_decay = self.ftt_plus_config.get('weight_decay', 0.0)
+        optimizer = torch.optim.AdamW(model.optimization_param_groups(), lr=lr, weight_decay=weight_decay)
         loss_fn = torch.nn.BCEWithLogitsLoss()
         
         # Entraînement

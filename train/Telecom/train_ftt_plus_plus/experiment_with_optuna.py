@@ -2,7 +2,6 @@ import os
 import json
 import numpy as np
 import optuna
-import logging
 import gc
 import torch
 
@@ -11,8 +10,6 @@ from ftt_plus_plus import FTTPlusPlusConfig, FeatureMapping, FTTPlusPlusPipeline
 from train_func import train, val, evaluate, create_loaders
 
 # Configuration du logging (affiche uniquement les erreurs importantes)
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
 
 # --- Paramètres fixes ---
 seeds = [0, 1, 2]
@@ -30,7 +27,8 @@ def to_named_dict(values):
 
 def objective(trial):
     # Hyperparamètres à optimiser
-    # Hyperparamètres séparés pour chaque étape
+
+    # Stage 1
     d_token_stage1 = trial.suggest_categorical("d_token_stage1", [16, 32, 64, 128])
     n_blocks_stage1 = trial.suggest_int("n_blocks_stage1", 1, 6)
     ffn_hidden_stage1 = trial.suggest_categorical("ffn_hidden_stage1", [64, 128, 256])
@@ -40,6 +38,7 @@ def objective(trial):
     lr_stage1 = trial.suggest_float("lr_stage1", 1e-5, 1e-1, log=True)
     weight_decay_stage1 = trial.suggest_float("weight_decay_stage1", 1e-6, 1e-1, log=True)
 
+    # Stage 2
     d_token_stage2 = trial.suggest_categorical("d_token_stage2", [16, 32, 64, 128])
     n_blocks_stage2 = trial.suggest_int("n_blocks_stage2", 1, 6)
     ffn_hidden_stage2 = trial.suggest_categorical("ffn_hidden_stage2", [64, 128, 256])
@@ -101,7 +100,7 @@ def objective(trial):
             'weight_decay': weight_decay_stage2
         }
 
-        # Correction : définir un dossier de résultats unique pour chaque trial/seed
+        # Définir un dossier de résultats unique pour chaque trial/seed
         output_dir = os.path.join(metrics_dir, f"trial_{trial.number}", f"seed_{seed_val}")
         os.makedirs(output_dir, exist_ok=True)
         config = FTTPlusPlusConfig(
@@ -148,6 +147,7 @@ def objective(trial):
         result = {
             "trial_number": trial.number,
             "seed": seed_val,
+
             # Stage 1
             "d_token_stage1": d_token_stage1,
             "n_blocks_stage1": n_blocks_stage1,
@@ -157,6 +157,7 @@ def objective(trial):
             "residual_dropout_stage1": residual_dropout_stage1,
             "lr_stage1": lr_stage1,
             "weight_decay_stage1": weight_decay_stage1,
+            
             # Stage 2
             "d_token_stage2": d_token_stage2,
             "n_blocks_stage2": n_blocks_stage2,
@@ -298,16 +299,16 @@ if __name__ == "__main__":
     with open(os.path.join(metrics_dir, "all_trials_detailed.json"), "w") as f:
         json.dump(all_trials, f, indent=2)
 
-    logger.info(f"Optimization completed!")
-    logger.info(f"Best trial: {best_trial.number}")
-    logger.info(f"Best mean AUC: {best_trial.value:.4f}")
-    logger.info(f"Best params: {best_trial.params}")
+    print(f"Optimization completed!")
+    print(f"Best trial: {best_trial.number}")
+    print(f"Best mean AUC: {best_trial.value:.4f}")
+    print(f"Best params: {best_trial.params}")
 
     if len(study.trials) > 10:
         importance = optuna.importance.get_param_importances(study)
-        logger.info("Parameter importance:")
+        print("Parameter importance:")
         for param, imp in importance.items():
-            logger.info(f"  {param}: {imp:.4f}")
+            print(f"  {param}: {imp:.4f}")
 
         with open(os.path.join(metrics_dir, "param_importance.json"), "w") as f:
             json.dump(importance, f, indent=2)
