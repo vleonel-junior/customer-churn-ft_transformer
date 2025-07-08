@@ -30,14 +30,25 @@ def to_named_dict(values):
 
 def objective(trial):
     # Hyperparamètres à optimiser
-    d_token = trial.suggest_categorical("d_token", [16, 32, 64, 128])
-    n_blocks = trial.suggest_int("n_blocks", 1, 6)
-    ffn_hidden = trial.suggest_categorical("ffn_hidden", [64, 128, 256])
-    attention_dropout = trial.suggest_float("attention_dropout", 0.0, 0.3)
-    ffn_dropout = trial.suggest_float("ffn_dropout", 0.0, 0.3)
-    residual_dropout = trial.suggest_float("residual_dropout", 0.0, 0.2)
-    lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
-    weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
+    # Hyperparamètres séparés pour chaque étape
+    d_token_stage1 = trial.suggest_categorical("d_token_stage1", [16, 32, 64, 128])
+    n_blocks_stage1 = trial.suggest_int("n_blocks_stage1", 1, 6)
+    ffn_hidden_stage1 = trial.suggest_categorical("ffn_hidden_stage1", [64, 128, 256])
+    attention_dropout_stage1 = trial.suggest_float("attention_dropout_stage1", 0.0, 0.3)
+    ffn_dropout_stage1 = trial.suggest_float("ffn_dropout_stage1", 0.0, 0.3)
+    residual_dropout_stage1 = trial.suggest_float("residual_dropout_stage1", 0.0, 0.2)
+    lr_stage1 = trial.suggest_float("lr_stage1", 1e-5, 1e-1, log=True)
+    weight_decay_stage1 = trial.suggest_float("weight_decay_stage1", 1e-6, 1e-1, log=True)
+
+    d_token_stage2 = trial.suggest_categorical("d_token_stage2", [16, 32, 64, 128])
+    n_blocks_stage2 = trial.suggest_int("n_blocks_stage2", 1, 6)
+    ffn_hidden_stage2 = trial.suggest_categorical("ffn_hidden_stage2", [64, 128, 256])
+    attention_dropout_stage2 = trial.suggest_float("attention_dropout_stage2", 0.0, 0.3)
+    ffn_dropout_stage2 = trial.suggest_float("ffn_dropout_stage2", 0.0, 0.3)
+    residual_dropout_stage2 = trial.suggest_float("residual_dropout_stage2", 0.0, 0.2)
+    lr_stage2 = trial.suggest_float("lr_stage2", 1e-5, 1e-1, log=True)
+    weight_decay_stage2 = trial.suggest_float("weight_decay_stage2", 1e-6, 1e-1, log=True)
+
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
     patience = trial.suggest_int("patience", 5, 30)
     embedding_type = trial.suggest_categorical("embedding_type", [
@@ -66,17 +77,29 @@ def objective(trial):
             ]
         )
 
-        # Construction de la config FTT++
+        # Construction de la config FTT++ avec hyperparamètres séparés
         ftt_plus_config = {
-            'd_token': d_token,
-            'n_blocks': n_blocks,
-            'attention_dropout': attention_dropout,
-            'ffn_d_hidden': ffn_hidden,
-            'ffn_dropout': ffn_dropout,
-            'residual_dropout': residual_dropout,
-            'd_out': 1
+            'd_token': d_token_stage1,
+            'n_blocks': n_blocks_stage1,
+            'attention_dropout': attention_dropout_stage1,
+            'ffn_d_hidden': ffn_hidden_stage1,
+            'ffn_dropout': ffn_dropout_stage1,
+            'residual_dropout': residual_dropout_stage1,
+            'd_out': 1,
+            'lr': lr_stage1,
+            'weight_decay': weight_decay_stage1
         }
-        random_model_config = ftt_plus_config.copy()
+        random_model_config = {
+            'd_token': d_token_stage2,
+            'n_blocks': n_blocks_stage2,
+            'attention_dropout': attention_dropout_stage2,
+            'ffn_d_hidden': ffn_hidden_stage2,
+            'ffn_dropout': ffn_dropout_stage2,
+            'residual_dropout': residual_dropout_stage2,
+            'd_out': 1,
+            'lr': lr_stage2,
+            'weight_decay': weight_decay_stage2
+        }
 
         config = FTTPlusPlusConfig(
             ftt_plus_config=ftt_plus_config,
@@ -102,7 +125,10 @@ def objective(trial):
             create_loaders_func=create_loaders,
             stage1_epochs=100,
             stage2_epochs=100,
-            lr=lr,
+            lr_stage1=lr_stage1,
+            lr_stage2=lr_stage2,
+            weight_decay_stage1=weight_decay_stage1,
+            weight_decay_stage2=weight_decay_stage2,
             batch_size=batch_size,
             patience=patience,
             seed=seed_val,
@@ -123,13 +149,24 @@ def objective(trial):
         result = {
             "trial_number": trial.number,
             "seed": seed_val,
-            "d_token": d_token,
-            "n_blocks": n_blocks,
-            "ffn_hidden": ffn_hidden,
-            "attention_dropout": attention_dropout,
-            "ffn_dropout": ffn_dropout,
-            "residual_dropout": residual_dropout,
-            "lr": lr,
+            # Stage 1
+            "d_token_stage1": d_token_stage1,
+            "n_blocks_stage1": n_blocks_stage1,
+            "ffn_hidden_stage1": ffn_hidden_stage1,
+            "attention_dropout_stage1": attention_dropout_stage1,
+            "ffn_dropout_stage1": ffn_dropout_stage1,
+            "residual_dropout_stage1": residual_dropout_stage1,
+            "lr_stage1": lr_stage1,
+            "weight_decay_stage1": weight_decay_stage1,
+            # Stage 2
+            "d_token_stage2": d_token_stage2,
+            "n_blocks_stage2": n_blocks_stage2,
+            "ffn_hidden_stage2": ffn_hidden_stage2,
+            "attention_dropout_stage2": attention_dropout_stage2,
+            "ffn_dropout_stage2": ffn_dropout_stage2,
+            "residual_dropout_stage2": residual_dropout_stage2,
+            "lr_stage2": lr_stage2,
+            "weight_decay_stage2": weight_decay_stage2,
             "batch_size": batch_size,
             "patience": patience,
             "M": M,
@@ -137,8 +174,7 @@ def objective(trial):
             "embedding_type": embedding_type,
             "best_val_loss": results.get("best_val_loss", None),
             "test_performance": to_named_dict(test_performance),
-            "val_performance": to_named_dict(val_performance),
-            "weight_decay": weight_decay,
+            "val_performance": to_named_dict(val_performance)
         }
         all_seed_results.append(result)
         with open(f'{output_dir}/métriques/ftt_training_results.json', 'w', encoding='utf-8') as f:
@@ -154,14 +190,24 @@ def objective(trial):
 
     trial.set_user_attr("detailed_results", {
         "hyperparams": {
-            "d_token": d_token,
-            "n_blocks": n_blocks,
-            "ffn_hidden": ffn_hidden,
-            "attention_dropout": attention_dropout,
-            "ffn_dropout": ffn_dropout,
-            "residual_dropout": residual_dropout,
-            "lr": lr,
-            "weight_decay": weight_decay,
+            # Stage 1
+            "d_token_stage1": d_token_stage1,
+            "n_blocks_stage1": n_blocks_stage1,
+            "ffn_hidden_stage1": ffn_hidden_stage1,
+            "attention_dropout_stage1": attention_dropout_stage1,
+            "ffn_dropout_stage1": ffn_dropout_stage1,
+            "residual_dropout_stage1": residual_dropout_stage1,
+            "lr_stage1": lr_stage1,
+            "weight_decay_stage1": weight_decay_stage1,
+            # Stage 2
+            "d_token_stage2": d_token_stage2,
+            "n_blocks_stage2": n_blocks_stage2,
+            "ffn_hidden_stage2": ffn_hidden_stage2,
+            "attention_dropout_stage2": attention_dropout_stage2,
+            "ffn_dropout_stage2": ffn_dropout_stage2,
+            "residual_dropout_stage2": residual_dropout_stage2,
+            "lr_stage2": lr_stage2,
+            "weight_decay_stage2": weight_decay_stage2,
             "batch_size": batch_size,
             "patience": patience,
             "M": M,
