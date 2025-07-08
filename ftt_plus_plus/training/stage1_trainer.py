@@ -138,11 +138,17 @@ class Stage1Trainer:
         device: str
     ) -> FTTPlusModelWrapper:
         """Crée et configure le modèle FTT+."""
+        # Filtrer la config pour ne garder que les clés attendues par make_baseline
+        baseline_keys = [
+            'n_num_features', 'cat_cardinalities', 'd_token', 'n_blocks',
+            'attention_dropout', 'ffn_d_hidden', 'ffn_dropout', 'residual_dropout', 'd_out'
+        ]
+        filtered_config = {k: v for k, v in self.ftt_plus_config.items() if k in baseline_keys}
         model_ftt_plus = FTTPlusModelWrapper.create_model(
             n_num_features=n_num_features,
             cat_cardinalities=cat_cardinalities,
             feature_names=self.feature_mapping.all_feature_names,
-            model_config=self.ftt_plus_config,
+            model_config=filtered_config,
             device=device
         )
         
@@ -181,7 +187,8 @@ class Stage1Trainer:
         train_loader, val_loader = create_loaders_func(y, batch_size, device)
         
         # Optimiseur et fonction de perte
-        # Récupérer le weight_decay depuis la config si présent, sinon 0.0
+        # Récupérer lr et weight_decay depuis la config si présents, sinon valeurs par défaut
+        lr = self.ftt_plus_config.get('lr', lr)
         weight_decay = self.ftt_plus_config.get('weight_decay', 0.0)
         optimizer = torch.optim.AdamW(model.optimization_param_groups(), lr=lr, weight_decay=weight_decay)
         loss_fn = torch.nn.BCEWithLogitsLoss()
