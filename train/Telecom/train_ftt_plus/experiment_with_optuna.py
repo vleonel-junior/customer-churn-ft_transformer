@@ -11,8 +11,6 @@ from interpretability_analyzer import analyze_interpretability
 from num_embedding_factory import get_num_embedding
 import gc
 
-# Configuration du logging (affiche uniquement les erreurs importantes)
-
 # --- Paramètres fixes ---
 seeds = [0, 1, 2]
 metrics_dir = "results/results_telecom/ftt_plus_optuna/"
@@ -38,7 +36,7 @@ def objective(trial):
     lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
-    patience = trial.suggest_int("patience", 5, 30)
+    patience = trial.suggest_int("patience", 15, 30)
     embedding_type = trial.suggest_categorical("embedding_type", [
         "L", "LR", "LR-LR", "Q", "Q-L", "Q-LR", "Q-LR-LR", "T", "T-L", "T-LR", "T-LR-LR", "P", "P-L", "P-LR", "P-LR-LR"
     ])
@@ -226,7 +224,7 @@ if __name__ == "__main__":
     try:
         study.optimize(
             objective,
-            n_trials=50,
+            n_trials=100,
             callbacks=[save_callback],
             show_progress_bar=True
         )

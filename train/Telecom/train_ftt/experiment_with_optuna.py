@@ -9,12 +9,7 @@ import zero
 import rtdl_lib
 from rtdl_lib.modules import FTTransformer
 from num_embedding_factory import get_num_embedding
-import logging
 import gc
-
-# Configuration du logging
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
 
 # --- Paramètres fixes ---
 seeds = [0, 1, 2]
@@ -51,7 +46,7 @@ def objective(trial):
     ffn_dropout = trial.suggest_float("ffn_dropout", 0.0, 0.3)
     residual_dropout = trial.suggest_float("residual_dropout", 0.0, 0.2)
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
-    patience_epochs = 10
+    patience_epochs = trial.suggest_int("patience", 15, 30)
     min_delta = 1e-4
 
     try:
@@ -60,7 +55,7 @@ def objective(trial):
         all_seed_results = []
 
         for seed_idx, seed in enumerate(seeds):
-            logger.info(f"Trial {trial.number}, Seed {seed_idx+1}/{len(seeds)}")
+            print(f"Trial {trial.number}, Seed {seed_idx+1}/{len(seeds)}")
 
             X, y, cat_cardinalities = get_data(seed)
 
@@ -131,7 +126,7 @@ def objective(trial):
                 else:
                     patience_counter += 1
                     if patience_counter >= patience_epochs:
-                        logger.info(f"Early stopping at epoch {epoch}")
+                        print(f"Early stopping at epoch {epoch}")
                         break
 
             if best_model_state is not None:
@@ -212,7 +207,7 @@ def objective(trial):
         return mean_auc
 
     except Exception as e:
-        logger.error(f"Error in trial {trial.number}: {str(e)}")
+        print(f"Error in trial {trial.number}: {str(e)}")
         raise
 
 if __name__ == "__main__":
@@ -251,12 +246,12 @@ if __name__ == "__main__":
     try:
         study.optimize(
             objective,
-            n_trials=50,
+            n_trials=100,
             callbacks=[save_callback],
             show_progress_bar=True
         )
     except KeyboardInterrupt:
-        logger.info("Optimization interrupted by user")
+        print("Optimization interrupted by user")
 
     best_trial = study.best_trial
 
@@ -283,16 +278,16 @@ if __name__ == "__main__":
     with open(os.path.join(metrics_dir, "all_trials_detailed.json"), "w") as f:
         json.dump(all_trials, f, indent=2)
 
-    logger.info(f"Optimization completed!")
-    logger.info(f"Best trial: {best_trial.number}")
-    logger.info(f"Best mean AUC: {best_trial.value:.4f}")
-    logger.info(f"Best params: {best_trial.params}")
+    print(f"Optimization completed!")
+    print(f"Best trial: {best_trial.number}")
+    print(f"Best mean AUC: {best_trial.value:.4f}")
+    print(f"Best params: {best_trial.params}")
 
     if len(study.trials) > 10:
         importance = optuna.importance.get_param_importances(study)
-        logger.info("Parameter importance:")
+        print("Parameter importance:")
         for param, imp in importance.items():
-            logger.info(f"  {param}: {imp:.4f}")
+            print(f"  {param}: {imp:.4f}")
 
         with open(os.path.join(metrics_dir, "param_importance.json"), "w") as f:
             json.dump(importance, f, indent=2)
