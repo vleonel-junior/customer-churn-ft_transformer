@@ -152,11 +152,17 @@ class Stage2Trainer:
         print(f"🎲 Interactions aléatoires: {self.k} paires")
         
         # Créer le modèle Random
+        # Filtrer la config pour ne garder que les clés attendues par le modèle Random
+        random_keys = [
+            'd_token', 'n_blocks', 'attention_dropout', 'ffn_d_hidden',
+            'ffn_dropout', 'residual_dropout', 'd_out'
+        ]
+        filtered_config = {k: v for k, v in self.random_model_config.items() if k in random_keys}
         model_random = FTTRandomModel.create_model(
             selected_feature_indices_num=selected_indices_num,
             selected_feature_indices_cat=selected_indices_cat,
             cat_cardinalities_selected=cat_cardinalities_selected,
-            model_config=self.random_model_config,
+            model_config=filtered_config,
             k=self.k,
             attention_seed=self.attention_seed
         )
