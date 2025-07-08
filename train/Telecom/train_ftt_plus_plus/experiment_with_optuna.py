@@ -101,13 +101,16 @@ def objective(trial):
             'weight_decay': weight_decay_stage2
         }
 
+        # Correction : définir un dossier de résultats unique pour chaque trial/seed
+        output_dir = os.path.join(metrics_dir, f"trial_{trial.number}", f"seed_{seed_val}")
+        os.makedirs(output_dir, exist_ok=True)
         config = FTTPlusPlusConfig(
             ftt_plus_config=ftt_plus_config,
             M=M,
             k=k,
             random_model_config=random_model_config,
             attention_seed=seed_val,
-            results_dir=None,
+            results_dir=output_dir,
             save_intermediate=False
         )
 
