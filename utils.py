@@ -22,10 +22,10 @@ def performance(labels, probs, thresold=0.5, name = 'test_dataset', path_save = 
     roc_auc         = np.round(roc_auc_score(labels, probs),4)
     pr_auc          = np.round(average_precision_score(labels, probs), 4)
     mcc             = np.round(matthews_corrcoef(labels, predicted_labels), 4)
-    sensitivity     = np.round(tp / (tp + fn), 4)
-    specificity     = np.round(tn / (tn + fp), 4)
-    precision       = np.round(tp / (tp + fp), 4)
-    f1              = np.round(2*precision*sensitivity / (precision + sensitivity), 4)
+    sensitivity     = np.round(tp / (tp + fn), 4) if (tp + fn) > 0 else 0.0
+    specificity     = np.round(tn / (tn + fp), 4) if (tn + fp) > 0 else 0.0
+    precision       = np.round(tp / (tp + fp), 4) if (tp + fp) > 0 else 0.0
+    f1              = np.round(2*precision*sensitivity / (precision + sensitivity), 4) if (precision + sensitivity) > 0 else 0.0
     ck              = np.round(cohen_kappa_score(labels, predicted_labels), 4)
     print('Performance for {}'.format(name))
     print('AUC-ROC: {}, AUC-PR: {}, Accuracy: {}, B_ACC : {}, MCC: {}, Sensitivity/Recall: {}, Specificity: {}, Precision: {}, F1-score: {}, CK-score {}'.format(
