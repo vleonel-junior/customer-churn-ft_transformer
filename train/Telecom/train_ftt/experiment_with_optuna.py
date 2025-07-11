@@ -168,7 +168,6 @@ def objective(trial):
             torch.save(model.state_dict(), f'{output_dir}/best_models/ftt_best_model.pt')
 
             # Nettoyage mémoire explicite
-            del model, optimizer, scheduler, num_embedding, train_loader, val_loader, X, y, cat_cardinalities
             torch.cuda.empty_cache()
             gc.collect()
 

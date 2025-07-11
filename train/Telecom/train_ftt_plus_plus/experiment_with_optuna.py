@@ -270,7 +270,7 @@ if __name__ == "__main__":
             show_progress_bar=True
         )
     except KeyboardInterrupt:
-        logger.info("Optimization interrupted by user")
+        print("Optimization interrupted by user")
 
     best_trial = study.best_trial
 
