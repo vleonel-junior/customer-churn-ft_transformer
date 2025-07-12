@@ -49,7 +49,7 @@ def objective(trial):
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
     patience = trial.suggest_int("patience", 15, 30)
     embedding_type = trial.suggest_categorical("embedding_type", [
-        "L", "LR", "LR-LR", "Q", "Q-L", "Q-LR", "Q-LR-LR", "T", "T-L", "T-LR", "T-LR-LR", "P", "P-L", "P-LR", "P-LR-LR"
+        "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR"
     ])
     M = trial.suggest_int("M", 5, 20)
     k = trial.suggest_int("k", 2, 10)
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     try:
         study.optimize(
             objective,
-            n_trials=100,
+            n_trials=50,
             callbacks=[save_callback],
             show_progress_bar=True
         )
