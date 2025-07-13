@@ -28,17 +28,17 @@ def to_named_dict(values):
 def objective(trial):
     # Hyperparamètres à optimiser
     d_token = trial.suggest_categorical("d_token", [16, 32, 64, 128])
-    n_blocks = trial.suggest_int("n_blocks", 1, 6)
+    n_blocks = trial.suggest_int("n_blocks", 2, 6)
     ffn_hidden = trial.suggest_categorical("ffn_hidden", [64, 128, 256])
-    attention_dropout = trial.suggest_float("attention_dropout", 0.0, 0.3)
-    ffn_dropout = trial.suggest_float("ffn_dropout", 0.0, 0.3)
-    residual_dropout = trial.suggest_float("residual_dropout", 0.0, 0.2)
+    attention_dropout = trial.suggest_float("attention_dropout", 0.1, 0.3)
+    ffn_dropout = trial.suggest_float("ffn_dropout", 0.1, 0.3)
+    residual_dropout = trial.suggest_float("residual_dropout", 0.1, 0.2)
     lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
     patience = trial.suggest_int("patience", 15, 30)
     embedding_type = trial.suggest_categorical("embedding_type", [
-        "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR"
+        "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR", "P-LR-LR"
     ])
 
     aucs = []
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     try:
         study.optimize(
             objective,
-            n_trials=50,
+            n_trials=25,
             callbacks=[save_callback],
             show_progress_bar=True
         )

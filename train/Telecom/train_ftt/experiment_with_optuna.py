@@ -33,15 +33,15 @@ def objective(trial):
     num_embedding_type = trial.suggest_categorical(
         "num_embedding_type",
         [
-            "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR"
+            "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR", "P-LR-LR"
         ]
     )
     n_heads = trial.suggest_categorical("n_heads", [2, 4, 8, 16])
     d_embedding = trial.suggest_categorical("d_embedding", [16, 32, 64, 128])
-    n_layers = trial.suggest_int("n_layers", 1, 6)
-    attention_dropout = trial.suggest_float("attention_dropout", 0.0, 0.3)
-    ffn_dropout = trial.suggest_float("ffn_dropout", 0.0, 0.3)
-    residual_dropout = trial.suggest_float("residual_dropout", 0.0, 0.2)
+    n_layers = trial.suggest_int("n_layers", 2, 6)
+    attention_dropout = trial.suggest_float("attention_dropout", 0.1, 0.3)
+    ffn_dropout = trial.suggest_float("ffn_dropout", 0.1, 0.3)
+    residual_dropout = trial.suggest_float("residual_dropout", 0.1, 0.2)
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
     patience_epochs = trial.suggest_int("patience", 15, 30)
     min_delta = 1e-4
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     try:
         study.optimize(
             objective,
-            n_trials=50,
+            n_trials=25,
             callbacks=[save_callback],
             show_progress_bar=True
         )

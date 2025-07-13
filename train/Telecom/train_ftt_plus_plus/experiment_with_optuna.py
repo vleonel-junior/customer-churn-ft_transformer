@@ -28,28 +28,28 @@ def objective(trial):
 
     # Stage 1
     d_token_stage1 = trial.suggest_categorical("d_token_stage1", [16, 32, 64, 128])
-    n_blocks_stage1 = trial.suggest_int("n_blocks_stage1", 1, 6)
+    n_blocks_stage1 = trial.suggest_int("n_blocks_stage1", 2, 6)
     ffn_hidden_stage1 = trial.suggest_categorical("ffn_hidden_stage1", [64, 128, 256])
-    attention_dropout_stage1 = trial.suggest_float("attention_dropout_stage1", 0.0, 0.3)
-    ffn_dropout_stage1 = trial.suggest_float("ffn_dropout_stage1", 0.0, 0.3)
-    residual_dropout_stage1 = trial.suggest_float("residual_dropout_stage1", 0.0, 0.2)
+    attention_dropout_stage1 = trial.suggest_float("attention_dropout_stage1", 0.1, 0.3)
+    ffn_dropout_stage1 = trial.suggest_float("ffn_dropout_stage1", 0.1, 0.3)
+    residual_dropout_stage1 = trial.suggest_float("residual_dropout_stage1", 0.1, 0.2)
     lr_stage1 = trial.suggest_float("lr_stage1", 1e-5, 1e-1, log=True)
     weight_decay_stage1 = trial.suggest_float("weight_decay_stage1", 1e-6, 1e-1, log=True)
 
     # Stage 2
     d_token_stage2 = trial.suggest_categorical("d_token_stage2", [16, 32, 64, 128])
-    n_blocks_stage2 = trial.suggest_int("n_blocks_stage2", 1, 6)
+    n_blocks_stage2 = trial.suggest_int("n_blocks_stage2", 2, 6)
     ffn_hidden_stage2 = trial.suggest_categorical("ffn_hidden_stage2", [64, 128, 256])
-    attention_dropout_stage2 = trial.suggest_float("attention_dropout_stage2", 0.0, 0.3)
-    ffn_dropout_stage2 = trial.suggest_float("ffn_dropout_stage2", 0.0, 0.3)
-    residual_dropout_stage2 = trial.suggest_float("residual_dropout_stage2", 0.0, 0.2)
+    attention_dropout_stage2 = trial.suggest_float("attention_dropout_stage2", 0.1, 0.3)
+    ffn_dropout_stage2 = trial.suggest_float("ffn_dropout_stage2", 0.1, 0.3)
+    residual_dropout_stage2 = trial.suggest_float("residual_dropout_stage2", 0.1, 0.2)
     lr_stage2 = trial.suggest_float("lr_stage2", 1e-5, 1e-1, log=True)
     weight_decay_stage2 = trial.suggest_float("weight_decay_stage2", 1e-6, 1e-1, log=True)
 
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
     patience = trial.suggest_int("patience", 15, 30)
     embedding_type = trial.suggest_categorical("embedding_type", [
-        "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR"
+        "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR", "P-LR-LR"
     ])
     M = trial.suggest_int("M", 5, 20)
     k = trial.suggest_int("k", 2, 10)
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     try:
         study.optimize(
             objective,
-            n_trials=50,
+            n_trials=25,
             callbacks=[save_callback],
             show_progress_bar=True
         )
