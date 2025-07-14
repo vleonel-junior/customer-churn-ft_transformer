@@ -65,6 +65,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 
 ### Schéma global du pipeline
 
+![Pipeline FTT++ : sélection de features puis attention randomisée](pipeline_ftt_plus_plus.png)  
 *Pipeline FTT++ : sélection de features puis attention randomisée.*
 
 ### Étape 1 : Sélection des M features importantes
