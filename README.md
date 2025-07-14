@@ -1,106 +1,118 @@
-# FTT+ & FTT++ : Interprétabilité avancée des Transformers pour données tabulaires
+# FTT+ & FTT++ : Transformers interprétables pour données tabulaires
 
 ---
 
-## Présentation
+## Introduction
 
-Ce dépôt propose une étude complète et des implémentations professionnelles de deux architectures innovantes pour l’apprentissage sur données tabulaires : **FTT+** (FT-Transformer Plus) et **FTT++** (FT-Transformer Plus Plus), inspirées des travaux de Tokimasa Isomura et al. L’objectif est de concilier **performance** et **interprétabilité**, deux enjeux majeurs pour l’IA appliquée aux données structurées.
+Ce dépôt propose deux architectures pour l’apprentissage sur données tabulaires :  
+- **FTT+** (FT-Transformer Plus) : attention sélective et interprétable.
+- **FTT++** (FT-Transformer Plus Plus) : sélection de features et attention randomisée.
 
----
-
-## 1. FTT+ : Transformer interprétable pour données tabulaires
-
-### Principe
-
-FTT+ adapte le mécanisme des Transformers (issus du NLP) aux spécificités des données tabulaires, en introduisant :
-
-- **Tokenisation des features** : chaque variable (numérique ou catégorielle) est encodée en vecteur dense via un `FeatureTokenizer`, produisant une séquence uniforme de tokens.
-- **Ajout du token CLS** : un vecteur spécial, appris, est concaténé en tête de séquence. Il sert de point de collecte de l’information globale, à la manière de BERT.
-- **Attention sélective et parcimonieuse** : l’attention n’est calculée qu’entre le token CLS et les features (dans les deux sens), excluant les interactions feature↔feature et l’auto-attention. Cela limite le surapprentissage et cible les relations vraiment utiles.
-- **Partage de la matrice Value (V) entre toutes les têtes** : innovation clé pour garantir que la moyenne des scores d’attention reflète directement l’importance réelle de chaque feature.
-
-![Schéma du partage de la matrice Value (V) entre toutes les têtes](Interpretable%20Multi-Head%20Attention.png)
-*Schéma du partage de la matrice Value (V) entre toutes les têtes, garantissant l’interprétabilité des scores d’attention.*
-
-- **Moyenne des matrices d’attention** : la matrice d’attention finale, moyennée sur les têtes, est exploitée pour l’interprétabilité (importance des features, visualisations…).
-
-### Pipeline d’un bloc FTT+
-
-![Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)](One%20Transformer%20layer.png)
-*Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+).*
-
-
-1. **Tokenisation** des features + ajout du token CLS.
-2. **Projection Q/K/V** : Q et K spécifiques à chaque tête, V partagée.
-3. **Calcul des scores d’attention** (scaled dot-product, normalisé par √d_head).
-
-![Illustration du calcul d’attention par produit scalaire (scaled dot-product attention)](Scaled%20Dot-Product%20Attention.png)
-*Illustration du calcul d’attention par produit scalaire (scaled dot-product attention), cœur du mécanisme Transformer.*
-
-4. **Application du masque** : seules les interactions CLS↔features sont autorisées.
-5. **Softmax** sur les scores masqués → poids d’attention.
-6. **Somme pondérée** des valeurs V selon les poids d’attention.
-7. **Connexion résiduelle, normalisation, Feed-Forward, skip connection**.
-8. **Sortie** : représentation enrichie de chaque token + matrice d’attention interprétable.
-
-### Intérêt
-
-- **Interprétabilité directe** : importance des features accessible via la matrice d’attention.
-- **Réduction du surapprentissage** : attention parcimonieuse adaptée aux données tabulaires.
-- **Performance** : architecture robuste, inspirée de RTDL, adaptée à la nature des données structurées.
+L’objectif : concilier **performance** et **interprétabilité** sur des données structurées.
 
 ---
 
-## 2. FTT++ : Sélection de features et attention randomisée
+## 1. FTT+ : Forward Pass et Composants
 
-### Principe
+### Schéma global du forward pass
 
-FTT++ va plus loin en combinant :
+![Architecture globale du FT-Transformer appliqué aux données tabulaires](FT_Transformer%20architecture.png)
+*Architecture globale du FT-Transformer appliqué aux données tabulaires.*
 
-1. **Étape 1 : Entraînement d’un FTT+**
-   - On entraîne un modèle FTT+ sur l’ensemble des données.
-   - On extrait les scores d’importance des features via la matrice d’attention CLS↔features.
-   - On sélectionne les M features les plus importantes (M = hyperparamètre).
+1. **Tokenisation des features**  
+   - `FeatureTokenizer` encode chaque variable (numérique/catégorielle) en vecteur dense.
 
-2. **Étape 2 : Entraînement d’un modèle Random sparse**
-   - On entraîne un modèle à attention randomisée sur les M features sélectionnées.
-   - L’attention est calculée :
-     - Entre le token CLS et chaque feature sélectionnée (comme FTT+)
-     - Pour k paires de features choisies aléatoirement (k = hyperparamètre)
-     - L’auto-attention reste interdite.
+   ![Illustration du processus de tokenisation des variables brutes en vecteurs denses](Illustration%20d'un%20Feature%20Tokenizer.png)
+   *Illustration du processus de tokenisation des variables brutes en vecteurs denses.*
 
-### Intérêt
+2. **Ajout du token CLS**  
+   - Un vecteur spécial, appris, est ajouté en tête de séquence.
 
-- **Focalisation sur les variables clés** : la sélection de features maximise la pertinence de l’attention.
-- **Simplicité et robustesse** : l’attention randomisée limite la complexité tout en explorant des interactions internes.
-- **Interprétabilité accrue** : chaque étape fournit des scores d’importance exploitables pour l’analyse.
+3. **Passage dans les blocs Transformer**  
+   - Chaque bloc applique :
+     - **Interpretable Multi-Head Attention** :  
+       - Q/K spécifiques à chaque tête, V partagée.
+       - Attention uniquement entre CLS et features (pas d’attention feature↔feature ni auto-attention).
+       - Moyenne des scores d’attention sur les têtes pour interprétabilité directe.
+
+       ![Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)](Scaled%20Dot-Product%20Attention.png)  
+       *Scaled Dot-Product Attention : seules les interactions CLS↔features sont autorisées, les autres sont masquées.*
+
+       <br>
+
+       ![Illustration de l'Interpretable Multi-Head Attention](Interpretable%20Multi-Head%20Attention.png)  
+       *Interpretable Multi-Head Attention : la moyenne des scores d’attention reflète l’importance réelle de chaque feature.*
+
+     - **Feed-Forward Network (FFN)** :  
+       - Transformation non-linéaire classique.
+     - **Normalisation & Résidualité** :  
+       - LayerNorm, skip connections.
+
+   ![Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)](One%20Transformer%20layer.png)
+   *Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+).*
+
+4. **Head de classification**  
+   - Prédiction à partir du token CLS.
+
+### Extraction de l’interprétabilité
+
+- Importance des features : extraite directement de la matrice d’attention CLS→features.
+- Visualisations : barplots, heatmaps.
 
 ---
 
-## 3. Structure du dépôt
+## 2. FTT++ : Pipeline en Deux Étapes
+
+### Schéma global du pipeline
+
+*Pipeline FTT++ : sélection de features puis attention randomisée.*
+
+### Étape 1 : Sélection des M features importantes
+
+- Entraînement d’un FTT+ sur toutes les features.
+- Extraction des scores d’importance via attention CLS.
+- Sélection des M features les plus importantes.
+
+### Étape 2 : Modèle Random Sparse sur les M features
+
+- Forward pass :
+  1. **Sélection des features** dans les tenseurs d’entrée.
+  2. **Tokenisation + CLS**.
+  3. **Blocs Transformer à attention sparse** :
+     - Attention entre CLS↔features.
+     - k paires de features choisies aléatoirement (sparse random attention).
+     - Pas d’auto-attention.
+  4. **FFN et Head** identiques à FTT+.
+
+- Extraction de l’interprétabilité :  
+  Importance des features dans le modèle Random, visualisations sparse.
+
+---
+
+## 3. Visualisation & Analyse
+
+- **Barplots** : importance des features (attention CLS).
+- **Heatmaps** : interactions (attention complète ou sparse).
+- **Export** : scores d’importance pour reporting/audit.
+
+---
+
+## 4. Structure du code
 
 ```
 ftt_plus/
-    attention.py         # Mécanismes d'attention sélective et interprétable
-    model.py             # Architecture FTT+ complète (tokenizer, CLS, blocs, head)
-    visualisation.py     # Outils de visualisation (barplots, heatmaps)
+    attention.py         # Attention sélective/interprétable
+    model.py             # Architecture FTT+ (tokenizer, CLS, blocs, head)
+    visualisation.py     # Visualisation (barplots, heatmaps)
 
 ftt_plus_plus/
-    config/              # Configurations et mapping des features
-    core/                # Modèles FTT+, random sparse, attention
-    training/            # Scripts d'entraînement pour chaque étape
-    pipeline/            # Orchestration complète FTT++
-    visualisation/       # Visualisations avancées FTT++
-    __init__.py          # Import centralisé des composants
+    config/              # Configurations, mapping features
+    core/                # Modèles FTT+, Random sparse, attention
+    training/            # Entraînement étape 1 & 2
+    pipeline/            # Orchestration pipeline FTT++
+    visualisation/       # Visualisations avancées
+    __init__.py          # Import centralisé
 ```
-
----
-
-## 4. Visualisation & Interprétabilité
-
-- **Barplots d’importance** : importance des features selon l’attention CLS.
-- **Heatmaps d’interactions** : matrice d’attention complète pour analyse fine.
-- **Export des scores** : pour reporting, audit, ou intégration métier.
 
 ---
 
