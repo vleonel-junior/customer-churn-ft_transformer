@@ -21,8 +21,8 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 
 1. **Tokenisation des features**  
    - `FeatureTokenizer` encode chaque variable (numérique/catégorielle) en vecteur dense.
-
    ![Illustration du processus de tokenisation des variables brutes en vecteurs denses](Illustration%20d'un%20Feature%20Tokenizer.png)
+
    *Illustration du processus de tokenisation des variables brutes en vecteurs denses.*
 
 2. **Ajout du token CLS**  
