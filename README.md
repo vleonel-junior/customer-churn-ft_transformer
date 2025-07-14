@@ -34,7 +34,7 @@ FTT+ adapte le mécanisme des Transformers (issus du NLP) aux spécificités des
 2. **Projection Q/K/V** : Q et K spécifiques à chaque tête, V partagée.
 3. **Calcul des scores d’attention** (scaled dot-product, normalisé par √d_head).
 
-![Illustration du calcul d’attention par produit scalaire (scaled dot-product attention)](Scale%20Dot-Product%20Attention.png)
+![Illustration du calcul d’attention par produit scalaire (scaled dot-product attention)](Scaled%20Dot-Product%20Attention.png)
 *Illustration du calcul d’attention par produit scalaire (scaled dot-product attention), cœur du mécanisme Transformer.*
 
 4. **Application du masque** : seules les interactions CLS↔features sont autorisées.
