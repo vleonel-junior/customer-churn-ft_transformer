@@ -18,13 +18,25 @@ FTT+ adapte le mécanisme des Transformers (issus du NLP) aux spécificités des
 - **Ajout du token CLS** : un vecteur spécial, appris, est concaténé en tête de séquence. Il sert de point de collecte de l’information globale, à la manière de BERT.
 - **Attention sélective et parcimonieuse** : l’attention n’est calculée qu’entre le token CLS et les features (dans les deux sens), excluant les interactions feature↔feature et l’auto-attention. Cela limite le surapprentissage et cible les relations vraiment utiles.
 - **Partage de la matrice Value (V) entre toutes les têtes** : innovation clé pour garantir que la moyenne des scores d’attention reflète directement l’importance réelle de chaque feature.
+
+![Schéma du partage de la matrice Value (V) entre toutes les têtes](Interpretable%20Multi-Head%20Attention.png)
+*Schéma du partage de la matrice Value (V) entre toutes les têtes, garantissant l’interprétabilité des scores d’attention.*
+
 - **Moyenne des matrices d’attention** : la matrice d’attention finale, moyennée sur les têtes, est exploitée pour l’interprétabilité (importance des features, visualisations…).
 
 ### Pipeline d’un bloc FTT+
 
+![Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)](One%20Transformer%20layer.png)
+*Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+).*
+
+
 1. **Tokenisation** des features + ajout du token CLS.
 2. **Projection Q/K/V** : Q et K spécifiques à chaque tête, V partagée.
 3. **Calcul des scores d’attention** (scaled dot-product, normalisé par √d_head).
+
+![Illustration du calcul d’attention par produit scalaire (scaled dot-product attention)](Scale%20Dot-Product%20Attention.png)
+*Illustration du calcul d’attention par produit scalaire (scaled dot-product attention), cœur du mécanisme Transformer.*
+
 4. **Application du masque** : seules les interactions CLS↔features sont autorisées.
 5. **Softmax** sur les scores masqués → poids d’attention.
 6. **Somme pondérée** des valeurs V selon les poids d’attention.
