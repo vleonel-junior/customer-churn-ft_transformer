@@ -35,16 +35,16 @@ def parse_arguments():
                        help='Époques pour l\'étape 1 (FTT+) (défaut: 100)')
     parser.add_argument('--stage2_epochs', type=int, default=100,
                        help='Époques pour l\'étape 2 (Random) (défaut: 100)')
-    parser.add_argument('--lr', type=float, default=1e-3,
-                       help='Taux d\'apprentissage global (défaut: 1e-3)')
-    parser.add_argument('--lr_stage1', type=float, default=1e-3,
-                       help='Taux d\'apprentissage étape 1 (défaut: 1e-3)')
-    parser.add_argument('--weight_decay_stage1', type=float, default=0.0,
-                       help='Weight decay étape 1 (défaut: 0.0)')
-    parser.add_argument('--lr_stage2', type=float, default=1e-3,
-                       help='Taux d\'apprentissage étape 2 (défaut: 1e-3)')
-    parser.add_argument('--weight_decay_stage2', type=float, default=0.0,
-                       help='Weight decay étape 2 (défaut: 0.0)')
+    parser.add_argument('--lr', type=float, default=5e-4,
+                       help='Taux d\'apprentissage global (défaut: 5e-4)')
+    parser.add_argument('--lr_stage1', type=float, default=5e-4,
+                       help='Taux d\'apprentissage étape 1 (défaut: 5e-4)')
+    parser.add_argument('--weight_decay_stage1', type=float, default=1e-5,
+                       help='Weight decay étape 1 (défaut: 1e-5)')
+    parser.add_argument('--lr_stage2', type=float, default=5e-4,
+                       help='Taux d\'apprentissage étape 2 (défaut: 5e-4)')
+    parser.add_argument('--weight_decay_stage2', type=float, default=1e-5,
+                       help='Weight decay étape 2 (défaut: 1e-5)')
     parser.add_argument('--batch_size', type=int, default=64,
                        help='Taille des batches (défaut: 64)')
     parser.add_argument('--patience', type=int, default=20,
@@ -53,13 +53,13 @@ def parse_arguments():
     # Configuration du modèle
     parser.add_argument('--d_token', type=int, default=64,
                        help='Dimension des tokens (défaut: 64)')
-    parser.add_argument('--n_blocks', type=int, default=2,
-                       help='Nombre de blocs Transformer (défaut: 2)')
+    parser.add_argument('--n_blocks', type=int, default=3,
+                       help='Nombre de blocs Transformer (défaut: 3)')
     parser.add_argument('--ffn_hidden', type=int, default=128,
                        help='Taille cachée du FFN (défaut: 128)')
-    parser.add_argument('--embedding_type', type=str, default='LR',
-                       help='Type d\'embedding numérique (défaut: LR)')
-    
+    parser.add_argument('--embedding_type', type=str, default='P-LR',
+                       help='Type d\'embedding numérique (défaut: P-LR)')
+
     # Paramètres de device
     parser.add_argument('--device', type=str, default=None,
                        help='Device à utiliser (cuda/cpu, défaut: auto-détection)')

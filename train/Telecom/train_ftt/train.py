@@ -11,8 +11,8 @@ import os
 if __name__ == '__main__':
     # Paramètres
     d_out = 1
-    lr = 0.001
-    weight_decay = 0.0
+    lr = 5e-4
+    weight_decay = 1e-5
     batch_size = 64
     n_epochs = 100
     seed = 0
@@ -46,8 +46,8 @@ if __name__ == '__main__':
 
     d_embedding = model.feature_tokenizer.d_token
 
-    # Embedding numérique personnalisé : P-LR-LR
-    embedding_type = "P-LR-LR"  # Choisir le type d'embedding numérique
+    # Embedding numérique personnalisé : P-LR
+    embedding_type = "P-LR"  # Choisir le type d'embedding numérique
     print(f"Type d'embedding numérique: {embedding_type}")
 
     # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings

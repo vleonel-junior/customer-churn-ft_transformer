@@ -12,8 +12,8 @@ from num_embedding_factory import get_num_embedding
 if __name__ == '__main__':
     # Paramètres
     d_out = 1
-    lr = 0.001
-    weight_decay = 0.0
+    lr = 0.0005
+    weight_decay = 1e-5
     batch_size = 64
     n_epochs = 100
     seed = 0
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         n_num_features=n_num_features,
         cat_cardinalities=cat_cardinalities,
         d_token=d_token,
-        n_blocks=2,
+        n_blocks=3,
         attention_dropout=0.1,
         ffn_d_hidden=128,
         ffn_dropout=0.1,
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     )
 
     # Embedding numérique personnalisé (optionnel)
-    embedding_type = "P-LR-LR"
+    embedding_type = "P-LR"
     print(f"Type d'embedding numérique: {embedding_type}")
 
     # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings
