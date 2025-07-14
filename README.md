@@ -16,8 +16,10 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 
 ### Schéma global du forward pass
 
-![Architecture globale du FT-Transformer appliqué aux données tabulaires](FT_Transformer%20architecture.png)
-*Architecture globale du FT-Transformer appliqué aux données tabulaires.*
+<p align="center">
+  <img src="FT_Transformer architecture.png" alt="Architecture globale du FT-Transformer appliqué aux données tabulaires" width="350"/>
+</p>
+<p align="center"><b>Architecture globale du FT-Transformer appliqué aux données tabulaires</b></p>
 
 1. **Tokenisation des features**  
    - `FeatureTokenizer` encode chaque variable (numérique/catégorielle) en vecteur dense.
@@ -35,21 +37,27 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
        - Attention uniquement entre CLS et features (pas d’attention feature↔feature ni auto-attention).
        - Moyenne des scores d’attention sur les têtes pour interprétabilité directe.
 
-       ![Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)](Scaled%20Dot-Product%20Attention.png)  
-       *Scaled Dot-Product Attention : seules les interactions CLS↔features sont autorisées, les autres sont masquées.*
+       <p align="center">
+         <img src="Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width="350"/>
+       </p>
+       <p align="center"><b>Scaled Dot-Product Attention : seules les interactions CLS↔features sont autorisées, les autres sont masquées.</b></p>
 
        <br>
 
-       ![Illustration de l'Interpretable Multi-Head Attention](Interpretable%20Multi-Head%20Attention.png)  
-       *Interpretable Multi-Head Attention : la moyenne des scores d’attention reflète l’importance réelle de chaque feature.*
+       <p align="center">
+         <img src="Interpretable Multi-Head Attention.png" alt="Illustration de l'Interpretable Multi-Head Attention" width="350"/>
+       </p>
+       <p align="center"><b>Interpretable Multi-Head Attention : la moyenne des scores d’attention reflète l’importance réelle de chaque feature.</b></p>
 
      - **Feed-Forward Network (FFN)** :  
        - Transformation non-linéaire classique.
      - **Normalisation & Résidualité** :  
        - LayerNorm, skip connections.
 
-   ![Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)](One%20Transformer%20layer.png)
-   *Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+).*
+   <p align="center">
+     <img src="One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="350"/>
+   </p>
+   <p align="center"><b>Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)</b></p>
 
 4. **Head de classification**  
    - Prédiction à partir du token CLS.
@@ -65,8 +73,10 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 
 ### Schéma global du pipeline
 
-![Pipeline FTT++ : sélection de features puis attention randomisée](pipeline_ftt_plus_plus.png)  
-*Pipeline FTT++ : sélection de features puis attention randomisée.*
+<p align="center">
+  <img src="pipeline_ftt_plus_plus.png" alt="Pipeline FTT++ : sélection de features puis attention randomisée" width="350"/>
+</p>
+<p align="center"><b>Pipeline FTT++ : sélection de features puis attention randomisée</b></p>
 
 ### Étape 1 : Sélection des M features importantes
 
