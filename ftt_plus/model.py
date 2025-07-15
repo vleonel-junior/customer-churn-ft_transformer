@@ -76,6 +76,7 @@ class InterpretableTransformerBlock(nn.Module):
         ffn_normalization: ModuleType,
         residual_dropout: float,
         prenormalization: bool,
+        attention_mode: str = 'hybrid',  # Défaut = 'hybrid'
     ) -> None:
         super().__init__()
         
@@ -86,7 +87,8 @@ class InterpretableTransformerBlock(nn.Module):
             d_model=d_token,
             n_heads=n_heads,
             dropout=attention_dropout,
-            initialization=attention_initialization
+            initialization=attention_initialization,
+            attention_mode=attention_mode  # Passer le paramètre
         )
         
         # Normalisation d'attention
@@ -235,6 +237,7 @@ class InterpretableFTTPlus(nn.Module):
         head_activation: ModuleType,
         head_normalization: ModuleType,
         d_out: int,
+        attention_mode: str = 'hybrid',  # Défaut = 'hybrid'
     ) -> None:
         super().__init__()
         
@@ -261,7 +264,8 @@ class InterpretableFTTPlus(nn.Module):
                 ffn_activation=ffn_activation,
                 ffn_normalization=ffn_normalization,
                 residual_dropout=residual_dropout,
-                prenormalization=prenormalization
+                prenormalization=prenormalization,
+                attention_mode=attention_mode  # Passer le paramètre
             )
             for _ in range(n_blocks)
         ])
@@ -297,6 +301,7 @@ class InterpretableFTTPlus(nn.Module):
             'prenormalization': True,
             'head_activation': 'ReLU',
             'head_normalization': 'LayerNorm',
+            'attention_mode': 'hybrid',  # Défaut = 'hybrid'
         }
     
     @classmethod
@@ -312,6 +317,7 @@ class InterpretableFTTPlus(nn.Module):
         ffn_dropout: float,
         residual_dropout: float,
         d_out: int,
+        attention_mode: str = 'hybrid',  # Défaut = 'hybrid'
     ) -> 'InterpretableFTTPlus':
         """Crée un modèle FTT+ interprétable avec configuration baseline.
         
@@ -358,6 +364,7 @@ class InterpretableFTTPlus(nn.Module):
             'ffn_dropout': ffn_dropout,
             'residual_dropout': residual_dropout,
             'd_out': d_out,
+            'attention_mode': attention_mode,
         })
         return cls(**config)
     

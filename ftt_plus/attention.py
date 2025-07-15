@@ -1,12 +1,16 @@
 """
-Mécanisme d'Attention Sélective pour Données Tabulaires
+Mécanisme d'Attention Sélective et Flexible pour Données Tabulaires
+
+Ce module implémente plusieurs schémas d'attention adaptés aux données tabulaires :
+- 'cls'   : attention uniquement entre le token CLS et les features (FTT+ original)
+- 'full'  : attention complète entre toutes les positions (hors diagonale)
+- 'hybrid': attention CLS↔features et features↔features (hors diagonale)
+
 Basé sur : "Optimizing FT-Transformer: Sparse Attention for Improved Performance and Interpretability"
 par Tokimasa Isomura, Ryotaro Shimizu, et Masayuki Goto
 
-Ce module implémente le mécanisme d'attention sélective proposé par Isomura et al.
-pour les données tabulaires. Cette implémentation suit leur observation fondamentale
-que les données tabulaires nécessitent une approche différente des transformers
-traditionnels utilisés pour le texte ou les images.
+Cette flexibilité permet d'explorer l'impact des interactions entre features sur la performance
+et l'interprétabilité du modèle, au-delà du schéma FTT+ original.
 
 Principe fondamental (Isomura et al.):
 ------------------------------------
@@ -26,26 +30,10 @@ inutile mais potentiellement nuisible à la performance."
 
 Caractéristiques principales:
 ----------------------------
-- Attention focalisée sur le token CLS: Calcul prioritaire des relations entre
-  le token CLS et les autres caractéristiques.
-  
-- Suppression de l'attention diagonale: Évite l'auto-attention d'une caractéristique
-  sur elle-même, considérée comme non pertinente pour les données tabulaires.
-
-- Réduction de la complexité computationnelle: En limitant le calcul de l'attention
-  aux interactions essentielles.
-
-Innovation Principale:
--------------------
-Contrairement au BigBird et autres variantes de transformers, cette implémentation
-suit spécifiquement l'approche FTT+ qui :
-1. Réduit intentionnellement l'attention aux relations vraiment significatives
-2. Évite le calcul d'attention pour des caractéristiques identiques
-3. Optimise le mécanisme pour les spécificités des données tabulaires
-
-Cette approche est directement inspirée des résultats empiriques présentés dans
-l'article d'Isomura et al., démontrant une amélioration significative des
-performances tout en réduisant la complexité computationnelle.
+- Attention flexible : modes 'cls', 'full', 'hybrid' sélectionnables
+- Attention focalisée sur le token CLS ou interactions complètes selon le mode
+- Suppression de l'attention diagonale (self-attention)
+- Réduction de la complexité computationnelle selon le mode choisi
 """
 
 import torch
@@ -165,7 +153,7 @@ class InterpretableMultiHeadAttention(nn.Module):
     réelle de chaque feature, permettant une interprétation claire des heatmaps.
     """
     
-    def __init__(self, d_model, n_heads, dropout=0.1, initialization='kaiming'):
+    def __init__(self, d_model, n_heads, dropout=0.1, initialization='kaiming', attention_mode='cls'):
         super().__init__()
         assert d_model % n_heads == 0, "d_model doit être divisible par n_heads"
         
@@ -173,6 +161,7 @@ class InterpretableMultiHeadAttention(nn.Module):
         self.n_heads = n_heads
         self.d_head = d_model // n_heads
         self.dropout = dropout
+        self.attention_mode = attention_mode  # 'cls', 'full', 'hybrid'
         
         # Projections Q et K spécifiques à chaque tête (pour la diversité)
         self.q_projections = nn.ModuleList([
@@ -229,18 +218,31 @@ class InterpretableMultiHeadAttention(nn.Module):
             scores_h = torch.matmul(q_h, k_h.transpose(-2, -1)) / math.sqrt(self.d_head)
             # (batch_size, seq_len, seq_len)
             
-            # Créer le masque sélectif FTT+ pour cette tête
-            cls_mask = torch.zeros_like(scores_h, dtype=torch.bool)
-            cls_mask[:, 0, :] = True  # CLS peut regarder toutes les features
-            cls_mask[:, :, 0] = True  # Toutes les features peuvent regarder CLS
-            
-            # Masquer l'attention diagonale
-            diagonal_mask = torch.eye(seq_len, dtype=torch.bool, device=scores_h.device)
-            diagonal_mask = diagonal_mask.unsqueeze(0)  # Ajouter dimension batch
-            cls_mask = cls_mask & ~diagonal_mask
-            
-            # Appliquer le masque
-            scores_h = scores_h.masked_fill(~cls_mask, float('-inf'))
+            # Créer le masque sélectif selon le mode choisi
+            if self.attention_mode == 'cls':
+                cls_mask = torch.zeros_like(scores_h, dtype=torch.bool)
+                cls_mask[:, 0, :] = True  # CLS peut regarder toutes les features
+                cls_mask[:, :, 0] = True  # Toutes les features peuvent regarder CLS
+                
+                # Masquer l'attention diagonale
+                diagonal_mask = torch.eye(seq_len, dtype=torch.bool, device=scores_h.device)
+                diagonal_mask = diagonal_mask.unsqueeze(0)  # Ajouter dimension batch
+                cls_mask = cls_mask & ~diagonal_mask
+                
+                # Appliquer le masque
+                scores_h = scores_h.masked_fill(~cls_mask, float('-inf'))
+            elif self.attention_mode == 'full':
+                # Autoriser toute l'attention sauf diagonale
+                full_mask = ~torch.eye(seq_len, dtype=torch.bool, device=scores_h.device).unsqueeze(0)
+                scores_h = scores_h.masked_fill(~full_mask, float('-inf'))
+            elif self.attention_mode == 'hybrid':
+                # Autoriser CLS<->features et features<->features (sauf diagonale)
+                hybrid_mask = torch.ones_like(scores_h, dtype=torch.bool)
+                diagonal_mask = torch.eye(seq_len, dtype=torch.bool, device=scores_h.device).unsqueeze(0)
+                hybrid_mask = hybrid_mask & ~diagonal_mask
+                scores_h = scores_h.masked_fill(~hybrid_mask, float('-inf'))
+            else:
+                raise ValueError(f"attention_mode inconnu: {self.attention_mode}")
             
             # Appliquer le masque additionnel si fourni
             if mask is not None:
@@ -265,5 +267,17 @@ class InterpretableMultiHeadAttention(nn.Module):
         output = self.output_proj(output)
         
         return output, avg_attention
-    
+        # (batch_size, seq_len, seq_len)
+        
+        # Appliquer le dropout sur l'attention moyennée
+        avg_attention = self.dropout_layer(avg_attention)
+        
+        # Calculer la sortie en utilisant l'attention moyennée et la matrice V partagée
+        output = torch.matmul(avg_attention, v)  # (batch_size, seq_len, d_model)
+        
+        # Projection finale
+        output = self.output_proj(output)
+        
+        return output, avg_attention
+
 
