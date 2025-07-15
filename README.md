@@ -14,6 +14,13 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 
 ## 1. FTT+ : Forward Pass et Composants
 
+> **Nouveauté : FTT+ supporte plusieurs schémas d'attention :**
+> - `cls` : attention uniquement entre le token CLS et les features (FTT+ original)
+> - `hybrid` : attention CLS↔features et features↔features (hors diagonale, par défaut)
+> - `full` : attention complète entre toutes les positions (hors diagonale)
+>
+> Le mode par défaut est **`hybrid`** (interactions CLS↔features et features↔features).
+
 ### Schéma global du forward pass
 
 <p align="center">
@@ -34,13 +41,15 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
    - Chaque bloc applique :
      - **Interpretable Multi-Head Attention** :  
        - Q/K spécifiques à chaque tête, V partagée.
-       - Attention uniquement entre CLS et features (pas d’attention feature↔feature ni auto-attention).
+       - **Schéma d'attention flexible** :  
+         - Par défaut, interactions CLS↔features **et** features↔features (hors diagonale).
+         - Possibilité de forcer le mode `cls` (FTT+ original) ou `full` via la configuration.
        - Moyenne des scores d’attention sur les têtes pour interprétabilité directe.
 
        <p align="center">
          <img src="Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width="500"/>
        </p>
-       <p align="center"><b>Scaled Dot-Product Attention : seules les interactions CLS↔features sont autorisées, les autres sont masquées.</b></p>
+       <p align="center"><b>Scaled Dot-Product Attention : les interactions autorisées dépendent du mode choisi (`cls`, `hybrid`, `full`).</b></p>
 
        <br>
 
@@ -64,7 +73,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 
 ### Extraction de l’interprétabilité
 
-- Importance des features : extraite directement de la matrice d’attention CLS→features.
+- Importance des features : extraite directement de la matrice d’attention CLS→features (ou interactions selon le mode).
 - Visualisations : barplots, heatmaps.
 
 ---
@@ -81,6 +90,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 ### Étape 1 : Sélection des M features importantes
 
 - Entraînement d’un FTT+ sur toutes les features.
+- **Le schéma d'attention utilisé est configurable (par défaut : `hybrid`).**
 - Extraction des scores d’importance via attention CLS.
 - Sélection des M features les plus importantes.
 
@@ -124,6 +134,19 @@ ftt_plus_plus/
     visualisation/       # Visualisations avancées
     __init__.py          # Import centralisé
 ```
+
+---
+
+## Notes d'utilisation
+
+- Pour changer le mode d'attention de FTT+, ajoutez dans la config :
+  ```python
+  ftt_plus_config = {
+      # ...autres paramètres...
+      'attention_mode': 'cls',  # ou 'hybrid', ou 'full'
+  }
+  ```
+- Le pipeline FTT++ utilisera ce mode pour l'étape 1.
 
 ---
 
