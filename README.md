@@ -17,7 +17,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 ### Schéma global du forward pass
 
 <p align="center">
-  <img src="FT_Transformer architecture.png" alt="Architecture globale du FT-Transformer appliqué aux données tabulaires" width="350"/>
+  <img src="FT_Transformer architecture.png" alt="Architecture globale du FT-Transformer appliqué aux données tabulaires" width="750"/>
 </p>
 <p align="center"><b>Architecture globale du FT-Transformer appliqué aux données tabulaires</b></p>
 
@@ -38,14 +38,14 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
        - Moyenne des scores d’attention sur les têtes pour interprétabilité directe.
 
        <p align="center">
-         <img src="Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width="350"/>
+         <img src="Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width="500"/>
        </p>
        <p align="center"><b>Scaled Dot-Product Attention : seules les interactions CLS↔features sont autorisées, les autres sont masquées.</b></p>
 
        <br>
 
        <p align="center">
-         <img src="Interpretable Multi-Head Attention.png" alt="Illustration de l'Interpretable Multi-Head Attention" width="350"/>
+         <img src="Interpretable Multi-Head Attention.png" alt="Illustration de l'Interpretable Multi-Head Attention" width="500"/>
        </p>
        <p align="center"><b>Interpretable Multi-Head Attention : la moyenne des scores d’attention reflète l’importance réelle de chaque feature.</b></p>
 
@@ -55,7 +55,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
        - LayerNorm, skip connections.
 
    <p align="center">
-     <img src="One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="350"/>
+     <img src="One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="500"/>
    </p>
    <p align="center"><b>Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)</b></p>
 
