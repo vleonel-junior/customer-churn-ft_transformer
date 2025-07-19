@@ -30,6 +30,7 @@ def objective(trial):
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     d_token = trial.suggest_categorical("d_token", [16, 32, 64, 128])
     n_blocks = trial.suggest_int("n_blocks", 2, 6)
+    n_heads = trial.suggest_categorical("n_heads", [2, 4, 8, 16])
     ffn_hidden = trial.suggest_categorical("ffn_hidden", [64, 128, 256])
     attention_dropout = trial.suggest_float("attention_dropout", 0.1, 0.3)
     ffn_dropout = trial.suggest_float("ffn_dropout", 0.1, 0.3)
@@ -70,6 +71,7 @@ def objective(trial):
                 cat_cardinalities=cat_cardinalities,
                 d_token=d_token,
                 n_blocks=n_blocks,
+                attention_n_heads=n_heads,
                 attention_dropout=attention_dropout,
                 ffn_d_hidden=ffn_hidden,
                 ffn_dropout=ffn_dropout,
@@ -134,6 +136,7 @@ def objective(trial):
                 "seed": seed,
                 "d_token": d_token,
                 "n_blocks": n_blocks,
+                "n_heads": n_heads, 
                 "ffn_hidden": ffn_hidden,
                 "attention_dropout": attention_dropout,
                 "ffn_dropout": ffn_dropout,
@@ -151,7 +154,7 @@ def objective(trial):
                 "val_losses": val_loss_list,
             }
             all_seed_results.append(result)
-            with open(f'{output_dir}/métriques/ftt_training_results.json', 'w', encoding='utf-8') as f:
+            with open(f'{output_dir}/métriques/ftt_plus_training_results.json', 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
             torch.save(model.state_dict(), f'{output_dir}/best_models/ftt_best_model.pt')
 
@@ -167,6 +170,7 @@ def objective(trial):
             "hyperparams": {
                 "d_token": d_token,
                 "n_blocks": n_blocks,
+                "n_heads": n_heads, 
                 "ffn_hidden": ffn_hidden,
                 "attention_dropout": attention_dropout,
                 "ffn_dropout": ffn_dropout,
