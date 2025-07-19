@@ -141,11 +141,10 @@ class Stage1Trainer:
         # Filtrer la config pour ne garder que les clés attendues par make_baseline
         baseline_keys = [
             'n_num_features', 'cat_cardinalities', 'd_token', 'n_blocks',
-            'attention_dropout', 'ffn_d_hidden', 'ffn_dropout', 'residual_dropout', 'd_out'
+            'n_heads', 'attention_mode', 'attention_dropout', 'ffn_d_hidden',
+            'ffn_dropout', 'residual_dropout', 'd_out'
         ]
         filtered_config = {k: v for k, v in self.ftt_plus_config.items() if k in baseline_keys}
-        # S'assurer que le mode d'attention est bien défini
-        filtered_config['attention_mode'] = self.ftt_plus_config.get('attention_mode', 'hybrid')
         model_ftt_plus = FTTPlusModelWrapper.create_model(
             n_num_features=n_num_features,
             cat_cardinalities=cat_cardinalities,

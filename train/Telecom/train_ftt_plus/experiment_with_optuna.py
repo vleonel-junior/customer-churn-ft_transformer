@@ -136,7 +136,7 @@ def objective(trial):
                 "seed": seed,
                 "d_token": d_token,
                 "n_blocks": n_blocks,
-                "n_heads": n_heads, 
+                "n_heads": n_heads,  # <-- Ajout explicite
                 "ffn_hidden": ffn_hidden,
                 "attention_dropout": attention_dropout,
                 "ffn_dropout": ffn_dropout,
@@ -170,7 +170,7 @@ def objective(trial):
             "hyperparams": {
                 "d_token": d_token,
                 "n_blocks": n_blocks,
-                "n_heads": n_heads, 
+                "n_heads": n_heads,  # <-- Ajout explicite
                 "ffn_hidden": ffn_hidden,
                 "attention_dropout": attention_dropout,
                 "ffn_dropout": ffn_dropout,

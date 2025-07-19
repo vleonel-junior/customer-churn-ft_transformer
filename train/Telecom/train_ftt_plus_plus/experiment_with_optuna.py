@@ -54,6 +54,10 @@ def objective(trial):
     M = trial.suggest_int("M", 5, 20)
     k = trial.suggest_int("k", 2, 10)
 
+    n_heads_stage1 = trial.suggest_categorical("n_heads_stage1", [2, 4, 8, 16])
+    n_heads_stage2 = trial.suggest_categorical("n_heads_stage2", [2, 4, 8, 16])
+    attention_mode = "hybrid"  # ou trial.suggest_categorical(...)
+
     aucs = []
     pr_aucs = []
     all_seed_results = []
@@ -78,6 +82,8 @@ def objective(trial):
         ftt_plus_config = {
             'd_token': d_token_stage1,
             'n_blocks': n_blocks_stage1,
+            'n_heads': n_heads_stage1,
+            'attention_mode': attention_mode,
             'attention_dropout': attention_dropout_stage1,
             'ffn_d_hidden': ffn_hidden_stage1,
             'ffn_dropout': ffn_dropout_stage1,
@@ -89,6 +95,8 @@ def objective(trial):
         random_model_config = {
             'd_token': d_token_stage2,
             'n_blocks': n_blocks_stage2,
+            'n_heads': n_heads_stage2,
+            'attention_mode': attention_mode,
             'attention_dropout': attention_dropout_stage2,
             'ffn_d_hidden': ffn_hidden_stage2,
             'ffn_dropout': ffn_dropout_stage2,
@@ -149,6 +157,7 @@ def objective(trial):
             # Stage 1
             "d_token_stage1": d_token_stage1,
             "n_blocks_stage1": n_blocks_stage1,
+            "n_heads_stage1": n_heads_stage1,  # <-- AJOUT
             "ffn_hidden_stage1": ffn_hidden_stage1,
             "attention_dropout_stage1": attention_dropout_stage1,
             "ffn_dropout_stage1": ffn_dropout_stage1,
@@ -159,6 +168,7 @@ def objective(trial):
             # Stage 2
             "d_token_stage2": d_token_stage2,
             "n_blocks_stage2": n_blocks_stage2,
+            "n_heads_stage2": n_heads_stage2,  # <-- AJOUT
             "ffn_hidden_stage2": ffn_hidden_stage2,
             "attention_dropout_stage2": attention_dropout_stage2,
             "ffn_dropout_stage2": ffn_dropout_stage2,
@@ -191,6 +201,7 @@ def objective(trial):
             # Stage 1
             "d_token_stage1": d_token_stage1,
             "n_blocks_stage1": n_blocks_stage1,
+            "n_heads_stage1": n_heads_stage1,
             "ffn_hidden_stage1": ffn_hidden_stage1,
             "attention_dropout_stage1": attention_dropout_stage1,
             "ffn_dropout_stage1": ffn_dropout_stage1,
@@ -200,6 +211,7 @@ def objective(trial):
             # Stage 2
             "d_token_stage2": d_token_stage2,
             "n_blocks_stage2": n_blocks_stage2,
+            "n_heads_stage2": n_heads_stage2, 
             "ffn_hidden_stage2": ffn_hidden_stage2,
             "attention_dropout_stage2": attention_dropout_stage2,
             "ffn_dropout_stage2": ffn_dropout_stage2,

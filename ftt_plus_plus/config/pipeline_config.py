@@ -33,12 +33,12 @@ class FTTPlusPlusConfig:
             raise ValueError(f"k doit être positif ou nul, reçu: {self.k}")
         
         # Validation des configs de modèles
-        required_ftt_plus_keys = ['d_token', 'n_blocks', 'd_out']
+        required_ftt_plus_keys = ['d_token', 'n_blocks', 'd_out', 'n_heads']
         for key in required_ftt_plus_keys:
             if key not in self.ftt_plus_config:
                 raise ValueError(f"Clé manquante dans ftt_plus_config: {key}")
         
-        required_random_keys = ['d_token', 'n_blocks', 'd_out']
+        required_random_keys = ['d_token', 'n_blocks', 'd_out', 'n_heads']
         for key in required_random_keys:
             if key not in self.random_model_config:
                 raise ValueError(f"Clé manquante dans random_model_config: {key}")
@@ -50,6 +50,7 @@ class FTTPlusPlusConfig:
         k: int,
         d_token: int = 64,
         n_blocks: int = 3,
+        n_heads: int = 8,
         attention_seed: Optional[int] = 42,
         results_dir: str = 'results'
     ) -> 'FTTPlusPlusConfig':
@@ -61,6 +62,7 @@ class FTTPlusPlusConfig:
             k: Nombre d'interactions aléatoires
             d_token: Dimension des tokens
             n_blocks: Nombre de blocs Transformer
+            n_heads: Nombre de têtes d'attention
             attention_seed: Seed pour l'attention
             results_dir: Répertoire de résultats
             
@@ -71,6 +73,7 @@ class FTTPlusPlusConfig:
         ftt_plus_config = {
             'd_token': d_token,
             'n_blocks': n_blocks,
+            'n_heads': n_heads,
             'attention_dropout': 0.1,
             'ffn_d_hidden': d_token * 2,
             'ffn_dropout': 0.1,
@@ -82,6 +85,7 @@ class FTTPlusPlusConfig:
         random_model_config = {
             'd_token': d_token,
             'n_blocks': n_blocks,
+            'n_heads': n_heads,
             'attention_dropout': 0.1,
             'ffn_d_hidden': d_token * 2,
             'ffn_dropout': 0.1,
