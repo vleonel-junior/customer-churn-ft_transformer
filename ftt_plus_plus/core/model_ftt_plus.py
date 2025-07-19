@@ -54,6 +54,10 @@ class FTTPlusModelWrapper:
         Returns:
             Wrapper du modèle FTT+ configuré
         """
+        # S'assurer que le mode d'attention est bien défini
+        if 'attention_mode' not in model_config:
+            model_config['attention_mode'] = 'hybrid'  # Défaut = hybrid
+
         # Créer le modèle FTT+ avec la méthode baseline
         model = InterpretableFTTPlus.make_baseline(
             n_num_features=n_num_features,
