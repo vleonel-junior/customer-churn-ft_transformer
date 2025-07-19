@@ -185,7 +185,7 @@ def objective(trial):
             "val_performance": to_named_dict(val_performance)
         }
         all_seed_results.append(result)
-        with open(f'{output_dir}/métriques/ftt_training_results.json', 'w', encoding='utf-8') as f:
+        with open(f'{output_dir}/métriques/ftt_plus_plus_train_results.json', 'w', encoding='utf-8') as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
 
         # Nettoyage mémoire explicite
