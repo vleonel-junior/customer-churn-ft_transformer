@@ -178,7 +178,7 @@ class InterpretableFTTPlus(nn.Module):
         cat_cardinalities: cardinalités des features catégorielles
         d_token: taille des tokens (doit être divisible par n_heads)
         n_blocks: nombre de blocs Transformer
-        attention_n_heads: nombre de têtes d'attention
+        n_heads: nombre de têtes d'attention
         attention_dropout: taux de dropout de l'attention
         attention_initialization: initialisation des projections d'attention
         attention_normalization: type de normalisation de l'attention
@@ -224,7 +224,7 @@ class InterpretableFTTPlus(nn.Module):
         cat_cardinalities: List[int],
         d_token: int,
         n_blocks: int,
-        attention_n_heads: int,
+        n_heads: int,
         attention_dropout: float,
         attention_initialization: str,
         attention_normalization: ModuleType,
@@ -237,7 +237,7 @@ class InterpretableFTTPlus(nn.Module):
         head_activation: ModuleType,
         head_normalization: ModuleType,
         d_out: int,
-        attention_mode: str = 'hybrid',  # Défaut = 'hybrid'
+        attention_mode: str = 'hybrid',
     ) -> None:
         super().__init__()
         
@@ -255,7 +255,7 @@ class InterpretableFTTPlus(nn.Module):
         self.blocks = nn.ModuleList([
             InterpretableTransformerBlock(
                 d_token=d_token,
-                n_heads=attention_n_heads,
+                n_heads=n_heads,
                 attention_dropout=attention_dropout,
                 attention_initialization=attention_initialization,
                 attention_normalization=attention_normalization,
@@ -265,7 +265,7 @@ class InterpretableFTTPlus(nn.Module):
                 ffn_normalization=ffn_normalization,
                 residual_dropout=residual_dropout,
                 prenormalization=prenormalization,
-                attention_mode=attention_mode  # Passer le paramètre
+                attention_mode=attention_mode
             )
             for _ in range(n_blocks)
         ])
@@ -293,7 +293,7 @@ class InterpretableFTTPlus(nn.Module):
             dict: configuration des hyperparamètres baseline
         """
         return {
-            'attention_n_heads': 8,
+            'n_heads': 8,
             'attention_initialization': 'kaiming',
             'attention_normalization': 'LayerNorm',
             'ffn_activation': 'ReGLU',
@@ -301,7 +301,7 @@ class InterpretableFTTPlus(nn.Module):
             'prenormalization': True,
             'head_activation': 'ReLU',
             'head_normalization': 'LayerNorm',
-            'attention_mode': 'hybrid',  # Défaut = 'hybrid'
+            'attention_mode': 'hybrid',
         }
     
     @classmethod
@@ -312,12 +312,13 @@ class InterpretableFTTPlus(nn.Module):
         cat_cardinalities: List[int],
         d_token: int,
         n_blocks: int,
+        n_heads: int,
         attention_dropout: float,
         ffn_d_hidden: int,
         ffn_dropout: float,
         residual_dropout: float,
         d_out: int,
-        attention_mode: str = 'hybrid',  # Défaut = 'hybrid'
+        attention_mode: str = 'hybrid',
     ) -> 'InterpretableFTTPlus':
         """Crée un modèle FTT+ interprétable avec configuration baseline.
         
@@ -359,6 +360,7 @@ class InterpretableFTTPlus(nn.Module):
             'cat_cardinalities': cat_cardinalities,
             'd_token': d_token,
             'n_blocks': n_blocks,
+            'n_heads': n_heads,  #
             'attention_dropout': attention_dropout,
             'ffn_d_hidden': ffn_d_hidden,
             'ffn_dropout': ffn_dropout,

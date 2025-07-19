@@ -71,7 +71,7 @@ def objective(trial):
                 cat_cardinalities=cat_cardinalities,
                 d_token=d_token,
                 n_blocks=n_blocks,
-                attention_n_heads=n_heads,
+                n_heads=n_heads,
                 attention_dropout=attention_dropout,
                 ffn_d_hidden=ffn_hidden,
                 ffn_dropout=ffn_dropout,
