@@ -157,7 +157,7 @@ def objective(trial):
             # Stage 1
             "d_token_stage1": d_token_stage1,
             "n_blocks_stage1": n_blocks_stage1,
-            "n_heads_stage1": n_heads_stage1,  # <-- AJOUT
+            "n_heads_stage1": n_heads_stage1, 
             "ffn_hidden_stage1": ffn_hidden_stage1,
             "attention_dropout_stage1": attention_dropout_stage1,
             "ffn_dropout_stage1": ffn_dropout_stage1,
@@ -168,7 +168,7 @@ def objective(trial):
             # Stage 2
             "d_token_stage2": d_token_stage2,
             "n_blocks_stage2": n_blocks_stage2,
-            "n_heads_stage2": n_heads_stage2,  # <-- AJOUT
+            "n_heads_stage2": n_heads_stage2,
             "ffn_hidden_stage2": ffn_hidden_stage2,
             "attention_dropout_stage2": attention_dropout_stage2,
             "ffn_dropout_stage2": ffn_dropout_stage2,
@@ -208,6 +208,7 @@ def objective(trial):
             "residual_dropout_stage1": residual_dropout_stage1,
             "lr_stage1": lr_stage1,
             "weight_decay_stage1": weight_decay_stage1,
+            
             # Stage 2
             "d_token_stage2": d_token_stage2,
             "n_blocks_stage2": n_blocks_stage2,
