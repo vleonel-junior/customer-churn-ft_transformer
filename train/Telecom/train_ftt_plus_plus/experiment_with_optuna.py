@@ -278,7 +278,7 @@ if __name__ == "__main__":
     try:
         study.optimize(
             objective,
-            n_trials=25,
+            n_trials=100,
             callbacks=[save_callback],
             show_progress_bar=True
         )
