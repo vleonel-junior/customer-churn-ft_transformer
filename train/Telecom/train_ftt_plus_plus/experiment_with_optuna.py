@@ -24,11 +24,14 @@ def to_named_dict(values):
     return {name: float(val) for name, val in zip(metric_names, values)}
 
 def objective(trial):
+
+    attention_mode = "hybrid"  # ou trial.suggest_categorical(...)
     # Hyperparamètres à optimiser
 
     # Stage 1
     d_token_stage1 = trial.suggest_categorical("d_token_stage1", [16, 32, 64, 128])
     n_blocks_stage1 = trial.suggest_int("n_blocks_stage1", 2, 6)
+    n_heads_stage1 = trial.suggest_categorical("n_heads_stage1", [2, 4, 8, 16])
     ffn_hidden_stage1 = trial.suggest_categorical("ffn_hidden_stage1", [64, 128, 256])
     attention_dropout_stage1 = trial.suggest_float("attention_dropout_stage1", 0.1, 0.3)
     ffn_dropout_stage1 = trial.suggest_float("ffn_dropout_stage1", 0.1, 0.3)
@@ -39,6 +42,7 @@ def objective(trial):
     # Stage 2
     d_token_stage2 = trial.suggest_categorical("d_token_stage2", [16, 32, 64, 128])
     n_blocks_stage2 = trial.suggest_int("n_blocks_stage2", 2, 6)
+    n_heads_stage2 = trial.suggest_categorical("n_heads_stage2", [2, 4, 8, 16])
     ffn_hidden_stage2 = trial.suggest_categorical("ffn_hidden_stage2", [64, 128, 256])
     attention_dropout_stage2 = trial.suggest_float("attention_dropout_stage2", 0.1, 0.3)
     ffn_dropout_stage2 = trial.suggest_float("ffn_dropout_stage2", 0.1, 0.3)
@@ -53,10 +57,6 @@ def objective(trial):
     ])
     M = trial.suggest_int("M", 5, 20)
     k = trial.suggest_int("k", 2, 10)
-
-    n_heads_stage1 = trial.suggest_categorical("n_heads_stage1", [2, 4, 8, 16])
-    n_heads_stage2 = trial.suggest_categorical("n_heads_stage2", [2, 4, 8, 16])
-    attention_mode = "hybrid"  # ou trial.suggest_categorical(...)
 
     aucs = []
     pr_aucs = []
