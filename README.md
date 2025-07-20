@@ -46,7 +46,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
        - Moyenne des scores d’attention sur les têtes pour interprétabilité directe.
 
        <p align="center">
-         <img src="images/Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width="500"/>
+         <img src="images/Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width=250"/>
        </p>
        <p align="center"><b>Scaled Dot-Product Attention : les interactions autorisées dépendent du mode choisi (`cls`, `hybrid`, `full`).</b></p>
 
@@ -63,7 +63,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
        - LayerNorm, skip connections.
 
    <p align="center">
-     <img src="images/One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="500"/>
+     <img src="images/One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="400"/>
    </p>
    <p align="center"><b>Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)</b></p>
 
