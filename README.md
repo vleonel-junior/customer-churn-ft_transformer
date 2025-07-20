@@ -1,18 +1,17 @@
-# FTT+ & FTT++ : Transformers interprétables pour données tabulaires
+# FTT+ : Feature Tokenizer Transformers interprétables pour données tabulaires
 
 ---
 
-## Introduction
+## 1. Introduction
 
-Ce dépôt propose deux architectures pour l’apprentissage sur données tabulaires :  
+Ce dépôt propose une architecture pour l’apprentissage sur données tabulaires :  
 - **FTT+** (FT-Transformer Plus) : attention sélective et interprétable.
-- **FTT++** (FT-Transformer Plus Plus) : sélection de features et attention randomisée.
 
 L’objectif : concilier **performance** et **interprétabilité** sur des données structurées.
 
 ---
 
-## 1. FTT+ : Forward Pass et Composants
+## 2. FTT+ : Forward Pass et Composants
 
 > **Nouveauté : FTT+ supporte plusieurs schémas d'attention :**
 > - `cls` : attention uniquement entre le token CLS et les features (FTT+ original)
@@ -78,66 +77,18 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 
 ---
 
-## 2. FTT++ : Pipeline en Deux Étapes
-
-### Schéma global du pipeline
-
-<p align="center">
-  <img src="pipeline_ftt_plus_plus.png" alt="Pipeline FTT++ : sélection de features puis attention randomisée" width="350"/>
-</p>
-<p align="center"><b>Pipeline FTT++ : sélection de features puis attention randomisée</b></p>
-
-### Étape 1 : Sélection des M features importantes
-
-- Entraînement d’un FTT+ sur toutes les features.
-- **Le schéma d'attention utilisé est configurable (par défaut : `hybrid`).**
-- Extraction des scores d’importance via attention CLS.
-- Sélection des M features les plus importantes.
-
-### Étape 2 : Modèle Random Sparse sur les M features
-
-- Forward pass :
-  1. **Sélection des features** dans les tenseurs d’entrée.
-  2. **Tokenisation + CLS**.
-  3. **Blocs Transformer à attention sparse** :
-     - Attention entre CLS↔features.
-     - k paires de features choisies aléatoirement (sparse random attention).
-     - Pas d’auto-attention.
-  4. **FFN et Head** identiques à FTT+.
-
-- Extraction de l’interprétabilité :  
-  Importance des features dans le modèle Random, visualisations sparse.
-
----
-
-## 3. Visualisation & Analyse
-
-- **Barplots** : importance des features (attention CLS).
-- **Heatmaps** : interactions (attention complète ou sparse).
-- **Export** : scores d’importance pour reporting/audit.
-
----
-
-## 4. Structure du code
+## 3. Structure du code
 
 ```
 ftt_plus/
     attention.py         # Attention sélective/interprétable
     model.py             # Architecture FTT+ (tokenizer, CLS, blocs, head)
     visualisation.py     # Visualisation (barplots, heatmaps)
-
-ftt_plus_plus/
-    config/              # Configurations, mapping features
-    core/                # Modèles FTT+, Random sparse, attention
-    training/            # Entraînement étape 1 & 2
-    pipeline/            # Orchestration pipeline FTT++
-    visualisation/       # Visualisations avancées
-    __init__.py          # Import centralisé
 ```
 
 ---
 
-## Notes d'utilisation
+## 4. Notes d'utilisation
 
 - Pour changer le mode d'attention de FTT+, ajoutez dans la config :
   ```python
@@ -146,7 +97,6 @@ ftt_plus_plus/
       'attention_mode': 'cls',  # ou 'hybrid', ou 'full'
   }
   ```
-- Le pipeline FTT++ utilisera ce mode pour l'étape 1.
 
 ---
 
@@ -170,7 +120,8 @@ ftt_plus_plus/
 ## 7. Auteur
 
 Léonel VODOUNOU  
-FTT+ / FTT++ – Interprétabilité avancée pour données tabulaires  
+FTT+ – Interprétabilité avancée pour données tabulaires  
 2025
 
+---
 ---
