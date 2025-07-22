@@ -11,8 +11,8 @@ import os
 if __name__ == '__main__':
     # Paramètres
     d_out = 1
-    lr = 5e-4
-    weight_decay = 1e-5
+    lr = 0.00011902866807435967
+    weight_decay = 0.00011674805566310007
     batch_size = 64
     n_epochs = 100
     seed = 0
@@ -37,17 +37,23 @@ if __name__ == '__main__':
     # Modèle
     from num_embedding_factory import get_num_embedding
 
-    model = FTTransformer.make_default(
+    model = FTTransformer(
         n_num_features=X['train'][0].shape[1],
         cat_cardinalities=cat_cardinalities,
-        last_layer_query_idx=[-1],  # Optimisation
+        d_token=16,
+        n_heads=8,
+        n_layers=3,
+        attention_dropout=0.25794051678351076,
+        ffn_dropout=0.2521443662367387,
+        residual_dropout=0.12518666510155615,
+        last_layer_query_idx=[-1],
         d_out=d_out,
     )
 
     d_embedding = model.feature_tokenizer.d_token
 
     # Embedding numérique personnalisé : P-LR
-    embedding_type = "P-LR"  # Choisir le type d'embedding numérique
+    embedding_type = "Q-LR"  # Choisir le type d'embedding numérique
     print(f"Type d'embedding numérique: {embedding_type}")
 
     # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings
