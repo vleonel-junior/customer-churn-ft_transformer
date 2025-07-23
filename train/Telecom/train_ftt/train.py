@@ -37,16 +37,16 @@ if __name__ == '__main__':
     # Modèle
     from num_embedding_factory import get_num_embedding
 
-    model = FTTransformer(
+    model = FTTransformer.make_baseline(
         n_num_features=X['train'][0].shape[1],
         cat_cardinalities=cat_cardinalities,
         d_token=16,
-        n_heads=8,
-        n_layers=3,
+        n_blocks=3,
         attention_dropout=0.25794051678351076,
         ffn_dropout=0.2521443662367387,
         residual_dropout=0.12518666510155615,
         last_layer_query_idx=[-1],
+        ffn_d_hidden=16,
         d_out=d_out,
     )
 
