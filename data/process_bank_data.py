@@ -13,7 +13,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 CHURN_XLS_PATH = "data/Churn_Modelling.xls"
 
 def read_data(path):
-    df = pd.read_excel(path)
+    df = pd.read_excel(path, engine="xlrd")
 
     # Colonnes à supprimer
     df = df.drop(columns=['RowNumber', 'CustomerId', 'Surname'])
