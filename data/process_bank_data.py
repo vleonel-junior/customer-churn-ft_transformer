@@ -54,7 +54,7 @@ def read_data(path):
     return X_num, X_cat, y_all, cat_cardinalities
 
 def get_data(seed):
-    X_num, X_cat, y_all, cat_cardinalities = read_data(CHURN_XLS_PATH)
+    X_num, X_cat, y_all, cat_cardinalities = read_data(CHURN_CSV_PATH)
 
     # Premier split: train+val vs test (80/20)
     X_num_train, X_num_test, X_cat_train, X_cat_test, y_train, y_test = sklearn.model_selection.train_test_split(
