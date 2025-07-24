@@ -10,7 +10,7 @@ warnings.filterwarnings('ignore', category=FutureWarning, module='sklearn')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-CHURN_XLS_PATH = "data/Bank/Churn_Modelling.xls"
+CHURN_XLS_PATH = "data/Churn_Modelling.xls"
 
 def read_data(path):
     df = pd.read_excel(path)
