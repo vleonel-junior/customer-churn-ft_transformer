@@ -268,16 +268,5 @@ class InterpretableMultiHeadAttention(nn.Module):
         
         return output, avg_attention
         # (batch_size, seq_len, seq_len)
-        
-        # Appliquer le dropout sur l'attention moyennée
-        avg_attention = self.dropout_layer(avg_attention)
-        
-        # Calculer la sortie en utilisant l'attention moyennée et la matrice V partagée
-        output = torch.matmul(avg_attention, v)  # (batch_size, seq_len, d_model)
-        
-        # Projection finale
-        output = self.output_proj(output)
-        
-        return output, avg_attention
 
 
