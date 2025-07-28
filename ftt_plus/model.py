@@ -429,7 +429,7 @@ class InterpretableFTTPlus(nn.Module):
                 print(f"Feature la plus importante: {max(importance, key=importance.get)}")
         """
         with torch.no_grad():
-            _, last_attention = self.forward(x_num, x_cat)
+            _, last_attention = self.forward(x_num, x_cat, return_attention=True)
         
         # Moyenner sur le batch et extraire les scores CLS -> features
         avg_attention = last_attention.mean(0)  # (seq_len, seq_len)
@@ -456,7 +456,7 @@ class InterpretableFTTPlus(nn.Module):
             ndarray: matrice d'attention de forme (seq_len, seq_len)
         """
         with torch.no_grad():
-            _, last_attention = self.forward(x_num, x_cat)
+            _, last_attention = self.forward(x_num, x_cat, return_attention=True)
         avg_attention = last_attention.mean(0)  # Moyenner sur le batch
         return avg_attention.cpu().numpy()
     
