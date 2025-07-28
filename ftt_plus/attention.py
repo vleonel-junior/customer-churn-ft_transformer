@@ -153,7 +153,7 @@ class InterpretableMultiHeadAttention(nn.Module):
     réelle de chaque feature, permettant une interprétation claire des heatmaps.
     """
     
-    def __init__(self, d_model, n_heads, dropout=0.1, initialization='kaiming', attention_mode='cls'):
+    def __init__(self, d_model, n_heads, dropout=0.1, initialization='kaiming', attention_mode='hybrid'):
         super().__init__()
         assert d_model % n_heads == 0, "d_model doit être divisible par n_heads"
         
