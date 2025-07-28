@@ -370,16 +370,17 @@ class InterpretableFTTPlus(nn.Module):
         })
         return cls(**config)
     
-    def forward(self, x_num: Optional[Tensor], x_cat: Optional[Tensor]) -> Tuple[Tensor, Tensor]:
-        """Forward pass du modèle avec extraction d'attention.
+    def forward(self, x_num: Optional[Tensor], x_cat: Optional[Tensor], return_attention: bool = False) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+        """Forward pass du modèle avec extraction d'attention optionnelle.
         
         Args:
             x_num: features numériques de forme (batch_size, n_num_features)
             x_cat: features catégorielles de forme (batch_size, n_cat_features)
-            
+            return_attention: si True, retourne aussi les poids d'attention
+        
         Returns:
             logits: scores de prédiction de forme (batch_size, d_out)
-            last_attention: poids d'attention de la dernière couche (batch_size, seq_len, seq_len)
+            last_attention: poids d'attention de la dernière couche (batch_size, seq_len, seq_len) si demandé
         """
         # Tokenisation des features
         x = self.feature_tokenizer(x_num, x_cat)
@@ -396,7 +397,10 @@ class InterpretableFTTPlus(nn.Module):
         # Classification à partir du token CLS
         logits = self.head(x)
         
-        return logits, last_attention
+        if return_attention:
+            return logits, last_attention
+        else:
+            return logits
     
     def get_cls_importance(
         self, 

@@ -56,7 +56,6 @@ def objective(trial):
             val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
 
             n_num_features = X['train'][0].shape[1]
-            # Embedding numérique sur CPU pour compatibilité
             X_train_device = X['train'][0].to(device)
             num_embedding = get_num_embedding(
                 embedding_type=embedding_type,
@@ -65,7 +64,7 @@ def objective(trial):
                 y_train=y['train'].to(device) if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
             )
 
-            # Modèle FTT+ sur le bon device
+            # Modèle FTT+
             model = InterpretableFTTPlus.make_baseline(
                 n_num_features=n_num_features,
                 cat_cardinalities=cat_cardinalities,
