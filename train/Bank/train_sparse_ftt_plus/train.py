@@ -52,7 +52,7 @@ if __name__ == '__main__':
         n_blocks=3,
         n_heads=8,
         attention_dropout=0.2,
-        ffn_d_hidden=d_token * 4
+        ffn_d_hidden=d_token * 4,
         ffn_dropout=0.1,
         residual_dropout=0.0, 
         d_out=d_out
