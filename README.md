@@ -23,15 +23,17 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 ### Schéma global du forward pass
 
 <p align="center">
-  <img src="images/FT_Transformer architecture.png" alt="Architecture globale du FT-Transformer appliqué aux données tabulaires" width="750"/>
+  <img src="images/FT_Transformer architecture.png" alt="Architecture globale du FT-Transformer appliqué aux données tabulaires" width="700"/>
 </p>
 <p align="center"><b>Architecture globale du FT-Transformer appliqué aux données tabulaires</b></p>
 
 1. **Tokenisation des features**  
    - `FeatureTokenizer` encode chaque variable (numérique/catégorielle) en vecteur dense.
-   ![Illustration du processus de tokenisation des variables brutes en vecteurs denses](images/Illustration%20d'un%20Feature%20Tokenizer.png)
+   <p align="center">
+     <img src="images/Illustration%20d'un%20Feature%20Tokenizer.png" alt="Illustration du processus de tokenisation des variables brutes en vecteurs denses" width="700"/>
+   </p>
 
-   *Illustration du processus de tokenisation des variables brutes en vecteurs denses.*
+   <p align="center"><b>Illustration du processus de tokenisation des variables brutes en vecteurs denses.</b></p>
 
 2. **Ajout du token CLS**  
    - Un vecteur spécial, appris, est ajouté en tête de séquence.
@@ -46,14 +48,14 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
        - Moyenne des scores d’attention sur les têtes pour interprétabilité directe.
 
        <p align="center">
-         <img src="images/Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width=350"/>
+         <img src="images/Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width="350"/>
        </p>
        <p align="center"><b>Scaled Dot-Product Attention : les interactions autorisées dépendent du mode choisi (`cls`, `hybrid`, `full`).</b></p>
 
        <br>
 
        <p align="center">
-         <img src="images/Interpretable Multi-Head Attention.png" alt="Illustration de l'Interpretable Multi-Head Attention" width="500"/>
+         <img src="images/Interpretable Multi-Head Attention.png" alt="Illustration de l'Interpretable Multi-Head Attention" width="700"/>
        </p>
        <p align="center"><b>Interpretable Multi-Head Attention : la moyenne des scores d’attention reflète l’importance réelle de chaque feature.</b></p>
 
@@ -63,7 +65,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
        - LayerNorm, skip connections.
 
    <p align="center">
-     <img src="images/One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="400"/>
+     <img src="images/One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="700"/>
    </p>
    <p align="center"><b>Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)</b></p>
 
