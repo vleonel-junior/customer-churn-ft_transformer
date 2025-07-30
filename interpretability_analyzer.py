@@ -113,7 +113,7 @@ class InterpretabilityAnalyzer:
         
         # Graphique d'importance
         self._try_visualization(
-            [('ftt_plus_plus.visualisation', 'create_ftt_plus_plus_importance_chart'),
+            [('sparse_ftt_plus.visualisation', 'create_importance_bar_chart'),
              ('ftt_plus.visualisation', 'create_importance_bar_chart')],
             cls_importance,
             output_path=str(self.results_dir / 'heatmaps' / f'{model_name}_importance_seed_{seed}.png'),
@@ -121,10 +121,11 @@ class InterpretabilityAnalyzer:
         )
         
         # Heatmap d'attention
-        # Générer la heatmap d'attention uniquement pour les modèles finaux ftt_plus_plus
-        if "ftt_plus_plus" in model_name and "ftt_plus_from_ftt_plus_plus" not in model_name:
+        # Générer la heatmap d'attention pour les modèles ftt_plus et sparse_ftt_plus
+        if "ftt_plus" in model_name:
             self._try_visualization(
-                [('ftt_plus_plus.visualisation', 'visualize_sparse_attention_heatmap')],
+                [('sparse_ftt_plus.visualisation', 'visualize_full_interactions'),
+                 ('ftt_plus.visualisation', 'visualize_full_interactions')],
                 model=model,
                 x_num=X['test'][0],
                 x_cat=X['test'][1],
@@ -132,7 +133,6 @@ class InterpretabilityAnalyzer:
                 output_path=str(self.results_dir / 'heatmaps' / f'{model_name}_attention_seed_{seed}.png'),
                 title=f'Attention - {model_name} (Seed {seed})'
             )
-        # Pour ftt_plus, on ne génère pas la heatmap d'attention
     
     def _try_visualization(self, functions_to_try: List, *args, **kwargs):
         """Essaie les fonctions de visualisation jusqu'à en trouver une qui marche."""

@@ -100,6 +100,16 @@ ftt_plus/
 
 ---
 
+## 5bis. Dépendances supplémentaires pour `sparse_ftt_plus`
+
+Pour utiliser la version sparsemax de FTT+, installez la dépendance suivante :
+
+```bash
+pip install sparsemax
+```
+
+---
+
 ## 5. Pourquoi cette étude ?
 
 - **Comprendre et expliquer les décisions des modèles tabulaires** : enjeu crucial en entreprise (banque, assurance, santé…).
