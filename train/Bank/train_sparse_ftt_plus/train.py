@@ -54,7 +54,7 @@ if __name__ == '__main__':
     d_embedding = model.feature_tokenizer.d_token
 
     # Embedding numérique personnalisé : Q-LR
-    embedding_type = "Q-LR"  # Choisir le type d'embedding numérique
+    embedding_type = "LR"  # Choisir le type d'embedding numérique
     print(f"Type d'embedding numérique: {embedding_type}")
 
     # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings
