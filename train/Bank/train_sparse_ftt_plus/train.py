@@ -12,12 +12,12 @@ from num_embedding_factory import get_num_embedding
 if __name__ == '__main__':
     # Paramètres
     d_out = 1
-    lr = 1e-4 
-    weight_decay = 1e-5  
-    batch_size = 256  
+    lr = 1.0540647524918737e-05
+    weight_decay = 0.0003360870237649223
+    batch_size = 32
     n_epochs = 100
     seed = 0
-    patience = 16  # Early stopping
+    patience = 29  # Early stopping
 
     # Créer le dossier de sortie si nécessaire
     output_dir = f'results/results_bank/sparse_ftt_plus/seed_{seed}'
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     # Configuration du modèle Sparse FTT+
     n_num_features = X['train'][0].shape[1]
-    d_token = 192  
+    d_token = 128
     
     print(f"Configuration du modèle:")
     print(f"  - Features numériques: {n_num_features}")
@@ -48,18 +48,18 @@ if __name__ == '__main__':
     model = InterpretableFTTPlus.make_baseline(
         n_num_features=n_num_features,
         cat_cardinalities=cat_cardinalities,
-        d_token=d_token,
+        d_token=128,
         n_blocks=3,
-        n_heads=8,
-        attention_dropout=0.2,
-        ffn_d_hidden=d_token * 4,
-        ffn_dropout=0.1,
-        residual_dropout=0.0, 
+        n_heads=16,
+        attention_dropout=0.2473988634060151,
+        ffn_d_hidden=256,
+        ffn_dropout=0.17474890937885124,
+        residual_dropout=0.12087417161076972,
         d_out=d_out
     )
 
     # Embedding numérique personnalisé (optionnel)
-    embedding_type = "P-LR"
+    embedding_type = "T"
     print(f"Type d'embedding numérique: {embedding_type}")
 
     # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings
