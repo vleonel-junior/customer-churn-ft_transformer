@@ -4,9 +4,8 @@ import torch
 import numpy as np
 
 def apply_model(model, x_num, x_cat=None):
-    """Applique le modèle aux données d'entrée - retourne seulement les logits"""
-    logits, _ = model(x_num, x_cat)  # Ignore les poids d'attention pour l'entraînement
-    return logits
+    """Applique le modèle aux données d'entrée"""
+    return model(x_num, x_cat, return_attention=False)
 
 @torch.no_grad()
 def evaluate(model, part, X, y, seed):

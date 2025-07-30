@@ -1,9 +1,9 @@
 """
-Module de Visualisation pour FTT+ Interprétable avec Sparsemax
+Module de Visualisation Générique pour Modèles FTT
 
-Fonctions essentielles pour visualiser les résultats FTT+ :
-1. visualize_cls_importance() - Pour l'importance CLS → features
-2. visualize_full_interactions() - Pour toutes les interactions
+Fonctions utilitaires pour visualiser les résultats d'interprétabilité :
+1. create_importance_bar_chart() - Pour l'importance des features
+2. visualize_full_interactions() - Pour la matrice complète des interactions
 """
 
 import numpy as np
@@ -11,15 +11,23 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import List, Dict, Union
 
+
 def create_importance_bar_chart(
-    importance_data: Union[Dict, np.ndarray],
+    importance_data: Union[Dict[str, float], np.ndarray],
     feature_names: List[str] = None,
     output_path: str = None,
     title: str = 'Importance des Features',
     show_annotations: bool = True
 ):
     """
-    Fonction pour créer un graphique en barres d'importance
+    Fonction pour créer un graphique en barres d'importance à partir de données brutes.
+    
+    Args:
+        importance_data: Dict {feature_name: score} ou np.ndarray de scores.
+        feature_names: Liste des noms de features (requise si importance_data est np.ndarray).
+        output_path: Chemin du fichier de sortie. Si None, affiche le graphique.
+        title: Titre du graphique.
+        show_annotations: Si True, affiche les valeurs au-dessus des barres.
     """
     # Normaliser l'entrée
     if isinstance(importance_data, dict):
@@ -27,10 +35,10 @@ def create_importance_bar_chart(
         scores_array = np.array(list(importance_data.values()))
     elif isinstance(importance_data, np.ndarray):
         if feature_names is None:
-            raise ValueError("feature_names requis pour np.ndarray")
+            raise ValueError("feature_names est requis lorsque importance_data est un np.ndarray")
         scores_array = importance_data
     else:
-        raise TypeError(f"Type non supporté: {type(importance_data)}")
+        raise TypeError(f"Type non supporté pour importance_data: {type(importance_data)}")
     
     # Créer la visualisation
     plt.figure(figsize=(16, 6))
@@ -67,29 +75,21 @@ def create_importance_bar_chart(
     else:
         plt.show()
 
-def visualize_cls_importance(
-    model,
-    x_num,
-    x_cat,
-    feature_names: List[str],
-    output_path: str,
-    title: str = 'Importance CLS → Features'
-):
-    """
-    Visualise l'importance CLS → features en utilisant get_attention_heatmap()
-    """
-    # Récupérer les scores CLS via get_attention_heatmap
-    cls_scores = model.get_attention_heatmap(x_num, x_cat, include_feature_interactions=False)
-    create_importance_bar_chart(cls_scores, feature_names, output_path, title)
 
 def create_interactions_heatmap_from_matrix(
     attention_matrix: np.ndarray,
     feature_names_with_cls: List[str],
-    output_path: str,
+    output_path: str = None,
     title: str = 'Matrice Complète des Interactions'
 ):
     """
-    Crée une heatmap à partir d'une matrice d'attention déjà calculée
+    Crée une heatmap à partir d'une matrice d'attention déjà calculée.
+    
+    Args:
+        attention_matrix: Matrice numpy 2D de scores d'attention (seq_len, seq_len).
+        feature_names_with_cls: Liste des noms de features, incluant 'CLS' en premier.
+        output_path: Chemin du fichier de sortie. Si None, affiche le graphique.
+        title: Titre du graphique.
     """
     plt.figure(figsize=(12, 10))
     sns.set_style("white")
@@ -118,28 +118,34 @@ def create_interactions_heatmap_from_matrix(
     ax.axvline(x=0.5, color='red', linewidth=2, alpha=0.6)
     
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.1, format='png')
-    plt.close()
     
-    print(f"Heatmap interactions sauvegardée: {output_path}")
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.1, format='png')
+        plt.close()
+        print(f"Heatmap interactions sauvegardée: {output_path}")
+    else:
+        plt.show()
+
 
 def visualize_full_interactions(
-    model,
-    x_num,
-    x_cat,
+    attention_matrix: np.ndarray,
     feature_names: List[str],
-    output_path: str,
+    output_path: str = None,
     title: str = 'Matrice Complète des Interactions'
 ):
     """
-    Visualise toutes les interactions via get_attention_heatmap()
-    """
-    # Récupérer la matrice complète via get_attention_heatmap
-    full_matrix = model.get_attention_heatmap(x_num, x_cat, include_feature_interactions=True)
+    Visualise toutes les interactions via une matrice d'attention déjà calculée.
+    Wrapper autour de create_interactions_heatmap_from_matrix.
     
+    Args:
+        attention_matrix: Matrice numpy 2D de scores d'attention (seq_len, seq_len).
+        feature_names: Liste des noms de features (sans 'CLS').
+        output_path: Chemin du fichier de sortie. Si None, affiche le graphique.
+        title: Titre du graphique.
+    """
     # Utiliser la fonction réutilisable
     create_interactions_heatmap_from_matrix(
-        full_matrix,
+        attention_matrix,
         ['CLS'] + feature_names,
         output_path,
         title

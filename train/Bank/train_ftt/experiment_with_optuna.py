@@ -33,7 +33,7 @@ def objective(trial):
     num_embedding_type = trial.suggest_categorical(
         "num_embedding_type",
         [
-            "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR", "P-LR-LR"
+            "L", "P-LR", "P-LR-LR"
         ]
     )
     n_heads = trial.suggest_categorical("n_heads", [2, 4, 8, 16])

@@ -6,13 +6,13 @@ import optuna
 from train_func import train, val, evaluate
 from data.process_bank_data import device, get_data
 import zero
-from ftt_plus.model import InterpretableFTTPlus
+from sparse_ftt_plus.model import InterpretableFTTPlus
 from num_embedding_factory import get_num_embedding
 import gc
 
 # --- Paramètres fixes ---
 seeds = [0, 1, 2]
-metrics_dir = "results/results_bank/ftt_plus_optuna/"
+metrics_dir = "results/results_bank/sparse_ftt_plus_optuna/"
 os.makedirs(metrics_dir, exist_ok=True)
 
 def to_named_dict(values):
@@ -29,14 +29,14 @@ def objective(trial):
     lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     d_token = trial.suggest_categorical("d_token", [16, 32, 64, 128])
-    n_blocks = trial.suggest_int("n_blocks", 2, 6)
-    n_heads = trial.suggest_categorical("n_heads", [2, 4, 8, 16])
+    n_blocks = trial.suggest_int("n_blocks", 2, 4)
+    n_heads = trial.suggest_categorical("n_heads", [2, 4, 8])
     ffn_hidden = trial.suggest_categorical("ffn_hidden", [64, 128, 256])
-    attention_dropout = trial.suggest_float("attention_dropout", 0.0, 0.3)
-    ffn_dropout = trial.suggest_float("ffn_dropout", 0.0, 0.3)
+    attention_dropout = trial.suggest_float("attention_dropout", 0.0, 0.5)
+    ffn_dropout = trial.suggest_float("ffn_dropout", 0.0, 0.5)
     residual_dropout = trial.suggest_float("residual_dropout", 0.0, 0.2)
-    batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
-    patience_epochs = trial.suggest_int("patience", 15, 30)
+    batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 256, 512])
+    patience_epochs = trial.suggest_int("patience", 5, 30) 
     min_delta = 1e-4
     embedding_type = trial.suggest_categorical(
         "embedding_type",
@@ -56,16 +56,15 @@ def objective(trial):
             val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
 
             n_num_features = X['train'][0].shape[1]
-            # Embedding numérique sur CPU pour compatibilité
-            X_train_cpu = X['train'][0].cpu()
+            X_train_device = X['train'][0].to(device)
             num_embedding = get_num_embedding(
                 embedding_type=embedding_type,
-                X_train=X_train_cpu,
+                X_train=X_train_device,
                 d_embedding=d_token,
-                y_train=y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
+                y_train=y['train'].to(device) if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
             )
 
-            # Modèle FTT+
+            # Modèle Sparse FTT+
             model = InterpretableFTTPlus.make_baseline(
                 n_num_features=n_num_features,
                 cat_cardinalities=cat_cardinalities,
@@ -158,9 +157,9 @@ def objective(trial):
                 "val_losses": val_loss_list,
             }
             all_seed_results.append(result)
-            with open(f'{output_dir}/métriques/ftt_plus_training_results.json', 'w', encoding='utf-8') as f:
+            with open(f'{output_dir}/métriques/sparse_ftt_plus_training_results.json', 'w', encoding='utf-8') as f: 
                 json.dump(result, f, indent=2, ensure_ascii=False)
-            torch.save(model.state_dict(), f'{output_dir}/best_models/ftt_best_model.pt')
+            torch.save(model.state_dict(), f'{output_dir}/best_models/sparse_ftt_best_model.pt')
 
             torch.cuda.empty_cache()
             gc.collect()
@@ -220,7 +219,7 @@ if __name__ == "__main__":
 
     study = optuna.create_study(
         direction="maximize",
-        study_name="ftt_plus_optuna_enhanced",
+        study_name="sparse_ftt_plus_optuna_enhanced",
         sampler=sampler,
         pruner=pruner
     )

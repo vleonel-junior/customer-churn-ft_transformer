@@ -1,20 +1,29 @@
 """
 Module d'Analyse d'Interprétabilité Générique
 
-Centralise l'analyse d'interprétabilité pour tous les modèles FTT.
+Centralise l'analyse d'interprétabilité pour tous les modèles FTT de manière modulaire.
 """
 
 import json
 import torch
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
+
+# Importation directe des fonctions de visualisation
+import visualisation
 
 
 class InterpretabilityAnalyzer:
-    """Analyseur d'interprétabilité générique pour modèles FTT."""
+    """Analyseur d'interprétabilité générique et modulaire pour modèles FTT."""
     
     def __init__(self, results_base_dir: str = 'results'):
+        """
+        Initialise l'analyseur.
+        
+        Args:
+            results_base_dir: Répertoire de base pour les résultats.
+        """
         self.results_dir = Path(results_base_dir)
         self._ensure_directories()
     
@@ -25,9 +34,9 @@ class InterpretabilityAnalyzer:
     
     def analyze_and_save(
         self,
-        model,
-        X: Dict,
-        y: Dict,
+        model: torch.nn.Module,
+        X: Dict[str, Union[np.ndarray, torch.Tensor]],
+        y: Dict[str, Union[np.ndarray, torch.Tensor]],
         model_name: str,
         seed: int,
         model_config: Dict[str, Any],
@@ -36,46 +45,74 @@ class InterpretabilityAnalyzer:
         feature_names: List[str],
         local_output_dir: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Analyse complète d'interprétabilité avec sauvegarde."""
+        """
+        Analyse complète d'interprétabilité avec sauvegarde.
         
+        Args:
+            model: Le modèle PyTorch entraîné.
+            X: Dictionnaire contenant les données, e.g., {'test': (x_num, x_cat)}.
+            y: Dictionnaire contenant les étiquettes.
+            model_name: Nom du modèle.
+            seed: Graine aléatoire utilisée.
+            model_config: Configuration du modèle.
+            training_results: Résultats de l'entraînement.
+            performance_results: Résultats de performance (val, test).
+            feature_names: Liste des noms de features.
+            local_output_dir: Répertoire de sauvegarde locale (optionnel).
+            
+        Returns:
+            dict: Résultats bruts de l'analyse d'interprétabilité.
+        """
         if not feature_names:
             raise ValueError("feature_names est obligatoire")
         
         print("\n=== Analyse d'interprétabilité ===")
         
-        # Calcul de l'importance
+        # 1. Calcul de l'importance des features via le token CLS
         model.eval()
         with torch.no_grad():
             cls_importance = model.get_cls_importance(X['test'][0], X['test'][1], feature_names)
         
-        # Affichage top 10
+        # 2. Affichage du top 10 des features importantes
         sorted_importance = sorted(cls_importance.items(), key=lambda x: x[1], reverse=True)
         print("\nTop 10 features importantes:")
         for i, (feature, score) in enumerate(sorted_importance[:10], 1):
             print(f"  {i:2d}. {feature:<20}: {score:.4f}")
         
-        # Sauvegardes
+        # 3. Sauvegarde des métriques de performance
         self._save_metrics(model_name, seed, model_config, training_results, performance_results, model)
+        
+        # 4. Sauvegarde des résultats bruts d'interprétabilité
         interpretability_results = self._save_interpretability(model_name, seed, feature_names, cls_importance, sorted_importance)
-        self._generate_visualizations(model, X, feature_names, model_name, seed, cls_importance)
+        
+        # 5. Génération et sauvegarde des visualisations
+        self._generate_and_save_visualizations(model, X, feature_names, model_name, seed, cls_importance)
+        
+        # 6. Sauvegarde des poids du modèle
         self._save_model(model_name, seed, model)
         
-        # Suppression de la sauvegarde locale pour éviter les fichiers parasites
+        # 7. Sauvegarde locale si demandée (pour compatibilité)
+        if local_output_dir:
+            self._save_local(local_output_dir, training_results, performance_results, cls_importance, model)
         
+        # 8. Résumé des fichiers sauvegardés
         self._print_summary(model_name, seed)
+        
         return interpretability_results
     
-    def _save_metrics(self, model_name: str, seed: int, model_config: Dict, training_results: Dict, performance_results: Dict, model):
+    def _save_metrics(self, model_name: str, seed: int, model_config: Dict, training_results: Dict, performance_results: Dict, model: torch.nn.Module):
         """Sauvegarde les métriques de performance."""
         # Définition des noms de métriques selon la fonction performance utilisée
         metric_names = [
             "roc_auc", "pr_auc", "accuracy", "balanced_accuracy", "mcc",
             "sensitivity", "specificity", "precision", "f1", "cohen_kappa"
         ]
+        
         def to_named_dict(values):
             if isinstance(values, dict):
                 return values
             return {name: float(val) for name, val in zip(metric_names, values)}
+        
         data = {
             'model_name': model_name,
             'seed': seed,
@@ -91,8 +128,8 @@ class InterpretabilityAnalyzer:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     
-    def _save_interpretability(self, model_name: str, seed: int, feature_names: List[str], cls_importance: Dict, sorted_importance: List) -> Dict:
-        """Sauvegarde les résultats d'interprétabilité."""
+    def _save_interpretability(self, model_name: str, seed: int, feature_names: List[str], cls_importance: Dict[str, float], sorted_importance: List) -> Dict:
+        """Sauvegarde les résultats bruts d'interprétabilité."""
         data = {
             'model_name': model_name,
             'seed': seed,
@@ -107,52 +144,51 @@ class InterpretabilityAnalyzer:
         
         return data
     
-    def _generate_visualizations(self, model, X: Dict, feature_names: List[str], model_name: str, seed: int, cls_importance: Dict):
-        """Génère les visualisations."""
+    def _generate_and_save_visualizations(self, model: torch.nn.Module, X: Dict, feature_names: List[str], model_name: str, seed: int, cls_importance: Dict[str, float]):
+        """Génère et sauvegarde les visualisations de manière directe et modulaire."""
         print("\nGénération des visualisations...")
         
-        # Graphique d'importance
-        self._try_visualization(
-            [('sparse_ftt_plus.visualisation', 'create_importance_bar_chart'),
-             ('ftt_plus.visualisation', 'create_importance_bar_chart')],
+        # 1. Graphique d'importance des features
+        importance_output_path = str(self.results_dir / 'heatmaps' / f'{model_name}_importance_seed_{seed}.png')
+        visualisation.create_importance_bar_chart(
             cls_importance,
-            output_path=str(self.results_dir / 'heatmaps' / f'{model_name}_importance_seed_{seed}.png'),
+            feature_names=feature_names,
+            output_path=importance_output_path,
             title=f"Importance - {model_name.replace('_', ' ').title()} (Seed {seed})"
         )
         
-        # Heatmap d'attention
-        # Générer la heatmap d'attention pour les modèles ftt_plus et sparse_ftt_plus
-        if "ftt_plus" in model_name:
-            self._try_visualization(
-                [('sparse_ftt_plus.visualisation', 'visualize_full_interactions'),
-                 ('ftt_plus.visualisation', 'visualize_full_interactions')],
-                model=model,
-                x_num=X['test'][0],
-                x_cat=X['test'][1],
-                feature_names=feature_names,
-                output_path=str(self.results_dir / 'heatmaps' / f'{model_name}_attention_seed_{seed}.png'),
-                title=f'Attention - {model_name} (Seed {seed})'
-            )
-    
-    def _try_visualization(self, functions_to_try: List, *args, **kwargs):
-        """Essaie les fonctions de visualisation jusqu'à en trouver une qui marche."""
-        for module_name, func_name in functions_to_try:
+        # 2. Heatmap d'attention complète (si le modèle la supporte)
+        # On vérifie si le modèle a la méthode get_full_attention_matrix
+        if hasattr(model, 'get_full_attention_matrix'):
             try:
-                module = __import__(module_name, fromlist=[func_name])
-                func = getattr(module, func_name)
-                func(*args, **kwargs)
-                return
-            except (ImportError, AttributeError):
-                continue
+                with torch.no_grad():
+                    full_attention_matrix = model.get_full_attention_matrix(X['test'][0], X['test'][1])
+                
+                attention_output_path = str(self.results_dir / 'heatmaps' / f'{model_name}_attention_seed_{seed}.png')
+                visualisation.visualize_full_interactions(
+                    full_attention_matrix.cpu().numpy(),
+                    feature_names=feature_names,
+                    output_path=attention_output_path,
+                    title=f'Attention - {model_name} (Seed {seed})'
+                )
+            except Exception as e:
+                print(f"Avertissement: Impossible de générer la heatmap d'attention pour {model_name}: {e}")
+        else:
+            print(f"Info: Le modèle {model_name} ne supporte pas la heatmap d'attention complète (methode get_full_attention_matrix manquante).")
     
-    def _save_model(self, model_name: str, seed: int, model):
-        """Sauvegarde le modèle."""
+    def _save_model(self, model_name: str, seed: int, model: torch.nn.Module):
+        """Sauvegarde les poids du modèle."""
         path = self.results_dir / 'best_models' / f'{model_name}_weights_seed_{seed}.pt'
         torch.save(model.state_dict(), path)
     
-    def _save_local(self, output_dir: str, training_results: Dict, performance_results: Dict, cls_importance: Dict, model):
+    def _save_local(self, output_dir: str, training_results: Dict, performance_results: Dict, cls_importance: Dict, model: torch.nn.Module):
         """Sauvegarde locale (compatibilité)."""
-        data = {**training_results, 'test_performance': performance_results['test'], 'val_performance': performance_results['val'], 'cls_importance': cls_importance}
+        data = {
+            **training_results, 
+            'test_performance': performance_results['test'], 
+            'val_performance': performance_results['val'], 
+            'cls_importance': cls_importance
+        }
         np.save(f'{output_dir}/training_results.npy', data)
         torch.save(model.state_dict(), f'{output_dir}/best_model.pt')
     
@@ -167,9 +203,9 @@ class InterpretabilityAnalyzer:
 
 
 def analyze_interpretability(
-    model,
-    X: Dict,
-    y: Dict,
+    model: torch.nn.Module,
+    X: Dict[str, Union[np.ndarray, torch.Tensor]],
+    y: Dict[str, Union[np.ndarray, torch.Tensor]],
     model_name: str,
     seed: int,
     model_config: Dict[str, Any],
@@ -179,6 +215,24 @@ def analyze_interpretability(
     local_output_dir: Optional[str] = None,
     results_base_dir: str = 'results'
 ) -> Dict[str, Any]:
-    """Fonction d'analyse d'interprétabilité générique."""
+    """
+    Fonction d'analyse d'interprétabilité générique et modulaire.
+    
+    Args:
+        model: Le modèle PyTorch entraîné.
+        X: Dictionnaire contenant les données.
+        y: Dictionnaire contenant les étiquettes.
+        model_name: Nom du modèle.
+        seed: Graine aléatoire utilisée.
+        model_config: Configuration du modèle.
+        training_results: Résultats de l'entraînement.
+        performance_results: Résultats de performance (val, test).
+        feature_names: Liste des noms de features.
+        local_output_dir: Répertoire de sauvegarde locale (optionnel).
+        results_base_dir: Répertoire de base pour les résultats.
+        
+    Returns:
+        dict: Résultats bruts de l'analyse d'interprétabilité.
+    """
     analyzer = InterpretabilityAnalyzer(results_base_dir)
     return analyzer.analyze_and_save(model, X, y, model_name, seed, model_config, training_results, performance_results, feature_names, local_output_dir)
