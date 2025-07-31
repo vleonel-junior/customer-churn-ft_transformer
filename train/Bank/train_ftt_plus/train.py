@@ -15,7 +15,7 @@ if __name__ == '__main__':
     lr = 1.0540647524918737e-05
     weight_decay = 0.0003360870237649223
     batch_size = 32
-    n_epochs = 100
+    n_epochs = 150
     seed = 0
     patience = 29  # Early stopping
 
@@ -151,8 +151,8 @@ if __name__ == '__main__':
     analyze_interpretability(
         model=model, X=X, y=y, model_name='interpretable_ftt_plus', seed=seed,
         model_config={'n_num_features': n_num_features, 'cat_cardinalities': cat_cardinalities,
-                     'd_token': d_token, 'n_blocks': 2, 'attention_dropout': 0.1,
-                     'ffn_d_hidden': 128, 'ffn_dropout': 0.1, 'residual_dropout': 0.1, 'embedding_type': embedding_type},
+                     'd_token': d_token, 'n_blocks': 3, 'n_heads': 16, 'attention_dropout': 0.2473988634060151,
+                     'ffn_d_hidden': 256, 'ffn_dropout': 0.17474890937885124, 'residual_dropout': 0.12087417161076972, 'embedding_type': embedding_type},
         training_results={'train_losses': train_loss_list, 'val_losses': val_loss_list,
                          'best_epoch': best_epoch, 'best_val_loss': best_val_loss},
         performance_results={'val': val_performance, 'test': test_performance},
