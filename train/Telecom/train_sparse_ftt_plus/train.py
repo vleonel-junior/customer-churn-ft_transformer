@@ -5,7 +5,7 @@ import time
 import os
 from data.process_telecom_data import device, get_data
 from train_func import train, val, evaluate
-from ftt_plus.model import InterpretableFTTPlus
+from sparse_ftt_plus.model import InterpretableFTTPlus
 from interpretability_analyzer import analyze_interpretability
 from num_embedding_factory import get_num_embedding
 
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     patience = 29  # Early stopping
 
     # Créer le dossier de sortie si nécessaire
-    output_dir = f'results/results_telecom/ftt_plus/seed_{seed}'
+    output_dir = f'results/results_telecom/sparse_ftt_plus/seed_{seed}'
     os.makedirs(f"{output_dir}/heatmaps", exist_ok=True)
     os.makedirs(f"{output_dir}/best_models", exist_ok=True)
     os.makedirs(f"{output_dir}/métriques", exist_ok=True)
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
 
-    # Configuration du modèle FTT+ refactorisé
+    # Configuration du modèle sparse FTT+ refactorisé
     n_num_features = X['train'][0].shape[1]
     d_token = 128
     
@@ -143,16 +143,20 @@ if __name__ == '__main__':
     test_performance = evaluate(model, 'test', X, y, seed)
 
     # Analyse d'interprétabilité automatique
-    feature_names = ['tenure', 'MonthlyCharges', 'TotalCharges', 'gender', 'SeniorCitizen', 'Partner', 'Dependents',
-                     'PhoneService', 'MultipleLines', 'InternetService', 'OnlineSecurity', 'OnlineBackup',
-                     'DeviceProtection', 'TechSupport', 'StreamingTV', 'StreamingMovies', 'Contract',
-                     'PaperlessBilling', 'PaymentMethod']
+    feature_names = [
+        'tenure', 'MonthlyCharges', 'TotalCharges',
+        'gender', 'SeniorCitizen', 'Partner', 'Dependents',
+        'PhoneService', 'MultipleLines', 'InternetService',
+        'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
+        'TechSupport', 'StreamingTV', 'StreamingMovies',
+        'Contract', 'PaperlessBilling', 'PaymentMethod'
+    ]
     
     analyze_interpretability(
-        model=model, X=X, y=y, model_name='interpretable_ftt_plus', seed=seed,
+        model=model, X=X, y=y, model_name='interpretable_sparse_ftt_plus', seed=seed,
         model_config={'n_num_features': n_num_features, 'cat_cardinalities': cat_cardinalities,
-                     'd_token': d_token, 'n_blocks': 2, 'attention_dropout': 0.1,
-                     'ffn_d_hidden': 128, 'ffn_dropout': 0.1, 'residual_dropout': 0.1, 'embedding_type': embedding_type},
+                     'd_token': d_token, 'n_blocks': 3, 'n_heads': 16, 'attention_dropout': 0.2473988634060151,
+                     'ffn_d_hidden': 256, 'ffn_dropout': 0.17474890937885124, 'residual_dropout': 0.12087417161076972, 'embedding_type': embedding_type},
         training_results={'train_losses': train_loss_list, 'val_losses': val_loss_list,
                          'best_epoch': best_epoch, 'best_val_loss': best_val_loss},
         performance_results={'val': val_performance, 'test': test_performance},
@@ -160,6 +164,5 @@ if __name__ == '__main__':
         local_output_dir=output_dir,
         results_base_dir=output_dir
     )
-
 
     print("Entraînement terminé!")

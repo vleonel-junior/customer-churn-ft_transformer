@@ -6,6 +6,7 @@
 
 Ce dépôt propose une architecture pour l’apprentissage sur données tabulaires :  
 - **FTT+** (FT-Transformer Plus) : attention sélective et interprétable.
+- **Sparse FTT+** : variante de FTT+ utilisant une attention sparse pour une interprétabilité encore plus fine.
 
 L’objectif : concilier **performance** et **interprétabilité** sur des données structurées.
 
@@ -65,7 +66,7 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
        - LayerNorm, skip connections.
 
    <p align="center">
-     <img src="images/One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="700"/>
+     <img src="images/One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="400"/>
    </p>
    <p align="center"><b>Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)</b></p>
 
@@ -79,18 +80,35 @@ L’objectif : concilier **performance** et **interprétabilité** sur des donn
 
 ---
 
-## 3. Structure du code
+## 3. Sparse FTT+
+
+Sparse FTT+ est une variante de FTT+ qui utilise une attention sparse au lieu de l'attention softmax standard. Cette approche permet de :
+
+- **Réduire le nombre d'interactions significatives** entre les features, rendant l'interprétabilité plus claire.
+- **Améliorer la performance** dans certains cas en se concentrant sur les interactions les plus pertinentes.
+- **Offrir une interprétabilité plus fine** en identifiant explicitement les features les plus influents.
+
+L'implémentation utilise la fonction `sparsemax` au lieu de `softmax` pour le calcul des poids d'attention. Cela permet d'obtenir des distributions d'attention qui sont strictement positives sur un sous-ensemble restreint d'éléments, et nulles ailleurs.
+
+---
+
+## 4. Structure du code
 
 ```
 ftt_plus/
     attention.py         # Attention sélective/interprétable
     model.py             # Architecture FTT+ (tokenizer, CLS, blocs, head)
     visualisation.py     # Visualisation (barplots, heatmaps)
+
+sparse_ftt_plus/
+    attention.py         # Attention sparse/interprétable
+    model.py             # Architecture Sparse FTT+ (tokenizer, CLS, blocs, head)
+    visualisation.py     # Visualisation (barplots, heatmaps)
 ```
 
 ---
 
-## 4. Notes d'utilisation
+## 5. Notes d'utilisation
 
 - Pour changer le mode d'attention de FTT+, ajoutez dans la config :
   ```python
@@ -102,7 +120,7 @@ ftt_plus/
 
 ---
 
-## 5bis. Dépendances supplémentaires pour `sparse_ftt_plus`
+## 6. Dépendances supplémentaires pour `sparse_ftt_plus`
 
 Pour utiliser la version sparsemax de FTT+, installez la dépendance suivante :
 
@@ -112,7 +130,7 @@ pip install sparsemax
 
 ---
 
-## 5. Pourquoi cette étude ?
+## 7. Pourquoi cette étude ?
 
 - **Comprendre et expliquer les décisions des modèles tabulaires** : enjeu crucial en entreprise (banque, assurance, santé…).
 - **Allier performance et transparence** : lever le « black box effect » des réseaux profonds.
@@ -120,7 +138,7 @@ pip install sparsemax
 
 ---
 
-## 6. Références
+## 8. Références
 
 - Vaswani, A., Shazeer, N., Parmar, N., et al. (2017). *Attention Is All You Need*. NeurIPS.
 - Isomura, T., Shimizu, R., & Goto, M. (2023). *Optimizing FT-Transformer: Sparse Attention for Improved Performance and Interpretability*.
@@ -129,11 +147,12 @@ pip install sparsemax
 
 ---
 
-## 7. Auteur
+## 9. Auteur
 
 Léonel VODOUNOU  
 FTT+ – Interprétabilité avancée pour données tabulaires  
 2025
 
 ---
+
 ---

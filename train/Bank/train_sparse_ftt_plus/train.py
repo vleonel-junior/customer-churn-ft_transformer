@@ -35,7 +35,7 @@ if __name__ == '__main__':
     train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
 
-    # Configuration du modèle FTT+ refactorisé
+    # Configuration du modèle sparse FTT+ refactorisé
     n_num_features = X['train'][0].shape[1]
     d_token = 128
     

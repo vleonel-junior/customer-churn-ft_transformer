@@ -3,6 +3,7 @@ from rtdl_lib.modules import FTTransformer
 import zero
 from data.process_bank_data import device, get_data
 from train_funct import train, val, evaluate
+from num_embedding_factory import get_num_embedding
 import numpy as np 
 import time 
 import torch
@@ -11,12 +12,12 @@ import os
 if __name__ == '__main__':
     # Paramètres
     d_out = 1
-    lr = 0.00011902866807435967
-    weight_decay = 0.00011674805566310007
-    batch_size = 64
-    n_epochs = 100
+    lr = 1.0540647524918737e-05
+    weight_decay = 0.0003360870237649223
+    batch_size = 32
+    n_epochs = 150
     seed = 0
-    patience = 20  # Early stopping
+    patience = 29  # Early stopping
     
     # Créer le dossier de sortie si nécessaire
     output_dir = f'results/results_bank/ftt/seed_{seed}'
@@ -34,26 +35,34 @@ if __name__ == '__main__':
     train_loader = zero.data.IndexLoader(len(y['train']), batch_size, device=device)
     val_loader = zero.data.IndexLoader(len(y['val']), batch_size, device=device)
     
+    # Configuration du modèle FTT
+    n_num_features = X['train'][0].shape[1]
+    d_token = 128
+    
+    print(f"Configuration du modèle:")
+    print(f"  - Features numériques: {n_num_features}")
+    print(f"  - Features catégorielles: {len(cat_cardinalities)} (cardinalités: {cat_cardinalities})")
+    print(f"  - Taille des tokens: {d_token}")
+    
     # Modèle
-    from num_embedding_factory import get_num_embedding
-
     model = FTTransformer.make_baseline(
-        n_num_features=X['train'][0].shape[1],
+        n_num_features=n_num_features,
         cat_cardinalities=cat_cardinalities,
-        d_token=16,
+        d_token=d_token,
         n_blocks=3,
-        attention_dropout=0.25794051678351076,
-        ffn_dropout=0.2521443662367387,
-        residual_dropout=0.12518666510155615,
+        attention_n_heads=16,
+        attention_dropout=0.2473988634060151,
+        ffn_d_hidden=256,
+        ffn_dropout=0.17474890937885124,
+        residual_dropout=0.12087417161076972,
         last_layer_query_idx=[-1],
-        ffn_d_hidden=16,
         d_out=d_out,
     )
 
     d_embedding = model.feature_tokenizer.d_token
 
-    # Embedding numérique personnalisé : P-LR
-    embedding_type = "Q-LR"  # Choisir le type d'embedding numérique
+    # Embedding numérique personnalisé : T
+    embedding_type = "T"  # Choisir le type d'embedding numérique
     print(f"Type d'embedding numérique: {embedding_type}")
 
     # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings
@@ -172,6 +181,6 @@ if __name__ == '__main__':
     with open(f'{output_dir}/métriques/ftt_training_results.json', 'w', encoding='utf-8') as f:
         json.dump(results_json, f, indent=2, ensure_ascii=False)
     torch.save(model.state_dict(), f'{output_dir}/best_models/ftt_best_model.pt')
-
+    
     print(f"\nRésultats sauvegardés dans {output_dir}/")
     print("Entraînement terminé!")
