@@ -130,13 +130,11 @@ La fonction `sparsemax` produit des distributions d'attention :
 ```
 📦 ftt_plus/
 ├── 📄 attention.py         # Attention sélective/interprétable
-├── 📄 model.py             # Architecture FTT+ complète
-└── 📄 visualisation.py     # Outils de visualisation
+└── 📄 model.py             # Architecture FTT+ complète
 
 📦 sparse_ftt_plus/
 ├── 📄 attention.py         # Attention sparse/interprétable
-├── 📄 model.py             # Architecture Sparse FTT+
-└── 📄 visualisation.py     # Visualisations spécialisées
+└──  📄 model.py             # Architecture Sparse FTT+
 ```
 
 ---
