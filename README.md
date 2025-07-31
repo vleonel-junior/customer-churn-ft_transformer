@@ -1,158 +1,220 @@
 # FTT+ : Feature Tokenizer Transformers interprétables pour données tabulaires
 
----
+<div align="center">
 
-## 1. Introduction
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Deep Learning](https://img.shields.io/badge/Deep%20Learning-Transformers-orange)](https://pytorch.org)
 
-Ce dépôt propose une architecture pour l’apprentissage sur données tabulaires :  
-- **FTT+** (FT-Transformer Plus) : attention sélective et interprétable.
-- **Sparse FTT+** : variante de FTT+ utilisant une attention sparse pour une interprétabilité encore plus fine.
+*Concilier **performance** et **interprétabilité** sur données tabulaires*
 
-L’objectif : concilier **performance** et **interprétabilité** sur des données structurées.
-
----
-
-## 2. FTT+ : Forward Pass et Composants
-
-> **Nouveauté : FTT+ supporte plusieurs schémas d'attention :**
-> - `cls` : attention uniquement entre le token CLS et les features (FTT+ original)
-> - `hybrid` : attention CLS↔features et features↔features (hors diagonale, par défaut)
-> - `full` : attention complète entre toutes les positions (hors diagonale)
->
-> Le mode par défaut est **`hybrid`** (interactions CLS↔features et features↔features).
-
-### Schéma global du forward pass
-
-<p align="center">
-  <img src="images/FT_Transformer architecture.png" alt="Architecture globale du FT-Transformer appliqué aux données tabulaires" width="700"/>
-</p>
-<p align="center"><b>Architecture globale du FT-Transformer appliqué aux données tabulaires</b></p>
-
-1. **Tokenisation des features**  
-   - `FeatureTokenizer` encode chaque variable (numérique/catégorielle) en vecteur dense.
-   <p align="center">
-     <img src="images/Illustration%20d'un%20Feature%20Tokenizer.png" alt="Illustration du processus de tokenisation des variables brutes en vecteurs denses" width="700"/>
-   </p>
-
-   <p align="center"><b>Illustration du processus de tokenisation des variables brutes en vecteurs denses.</b></p>
-
-2. **Ajout du token CLS**  
-   - Un vecteur spécial, appris, est ajouté en tête de séquence.
-
-3. **Passage dans les blocs Transformer**  
-   - Chaque bloc applique :
-     - **Interpretable Multi-Head Attention** :  
-       - Q/K spécifiques à chaque tête, V partagée.
-       - **Schéma d'attention flexible** :  
-         - Par défaut, interactions CLS↔features **et** features↔features (hors diagonale).
-         - Possibilité de forcer le mode `cls` (FTT+ original) ou `full` via la configuration.
-       - Moyenne des scores d’attention sur les têtes pour interprétabilité directe.
-
-       <p align="center">
-         <img src="images/Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+ (CLS↔features uniquement)" width="350"/>
-       </p>
-       <p align="center"><b>Scaled Dot-Product Attention : les interactions autorisées dépendent du mode choisi (`cls`, `hybrid`, `full`).</b></p>
-
-       <br>
-
-       <p align="center">
-         <img src="images/Interpretable Multi-Head Attention.png" alt="Illustration de l'Interpretable Multi-Head Attention" width="700"/>
-       </p>
-       <p align="center"><b>Interpretable Multi-Head Attention : la moyenne des scores d’attention reflète l’importance réelle de chaque feature.</b></p>
-
-     - **Feed-Forward Network (FFN)** :  
-       - Transformation non-linéaire classique.
-     - **Normalisation & Résidualité** :  
-       - LayerNorm, skip connections.
-
-   <p align="center">
-     <img src="images/One Transformer layer.png" alt="Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)" width="400"/>
-   </p>
-   <p align="center"><b>Vue d’ensemble d’un bloc Transformer adapté aux données tabulaires (FTT+)</b></p>
-
-4. **Head de classification**  
-   - Prédiction à partir du token CLS.
-
-### Extraction de l’interprétabilité
-
-- Importance des features : extraite directement de la matrice d’attention CLS→features (ou interactions selon le mode).
-- Visualisations : barplots, heatmaps.
+</div>
 
 ---
 
-## 3. Sparse FTT+
+## 📋 Table des matières
 
-Sparse FTT+ est une variante de FTT+ qui utilise une attention sparse au lieu de l'attention softmax standard. Cette approche permet de :
-
-- **Réduire le nombre d'interactions significatives** entre les features, rendant l'interprétabilité plus claire.
-- **Améliorer la performance** dans certains cas en se concentrant sur les interactions les plus pertinentes.
-- **Offrir une interprétabilité plus fine** en identifiant explicitement les features les plus influents.
-
-L'implémentation utilise la fonction `sparsemax` au lieu de `softmax` pour le calcul des poids d'attention. Cela permet d'obtenir des distributions d'attention qui sont strictement positives sur un sous-ensemble restreint d'éléments, et nulles ailleurs.
+- [Introduction](#-introduction)
+- [Architecture FTT+](#-architecture-ftt)
+- [Sparse FTT+](#-sparse-ftt)
+- [Structure du code](#-structure-du-code)
+- [Configuration](#-configuration)
+- [Installation](#-installation)
+- [Références](#-références)
 
 ---
 
-## 4. Structure du code
+## 🎯 Introduction
+
+Ce dépôt propose une architecture innovante pour l'apprentissage sur données tabulaires :
+
+- **FTT+** (FT-Transformer Plus) : attention sélective et interprétable
+- **Sparse FTT+** : variante utilisant une attention sparse pour une interprétabilité encore plus fine
+
+### 🎨 Modes d'attention supportés
+
+| Mode | Description | Interactions |
+|------|-------------|--------------|
+| `cls` | FTT+ original | CLS ↔ Features uniquement |
+| `hybrid` | **Mode par défaut** | CLS ↔ Features + Features ↔ Features |
+| `full` | Attention complète | Toutes positions (hors diagonale) |
+
+---
+
+## 🏗️ Architecture FTT+
+
+### Vue d'ensemble
+
+<div align="center">
+<img src="images/FT_Transformer architecture.png" alt="Architecture globale" width="80%" style="max-width: 700px;">
+<br><em>Architecture globale du FT-Transformer pour données tabulaires</em>
+</div>
+
+### 🔄 Pipeline de traitement
+
+#### 1. **Tokenisation des features**
+
+<div align="center">
+<img src="images/Illustration%20d'un%20Feature%20Tokenizer.png" alt="Feature Tokenizer" width="80%" style="max-width: 700px;">
+<br><em>Processus de tokenisation : variables brutes → vecteurs denses</em>
+</div>
+
+Le `FeatureTokenizer` transforme chaque variable (numérique/catégorielle) en représentation vectorielle dense.
+
+#### 2. **Token CLS & Blocs Transformer**
+
+Chaque bloc Transformer applique séquentiellement :
+
+<div align="center">
+<img src="images/One Transformer layer.png" alt="Bloc Transformer" width="60%" style="max-width: 400px;">
+<br><em>Architecture d'un bloc Transformer FTT+</em>
+</div>
+
+##### **Interpretable Multi-Head Attention**
+
+<div align="center">
+<img src="images/Scaled Dot-Product Attention.png" alt="Attention mécanisme" width="50%" style="max-width: 350px;">
+<br><em>Mécanisme d'attention adaptatif selon le mode choisi</em>
+</div>
+
+**Caractéristiques clés :**
+- Q/K spécifiques par tête, V partagée
+- Moyenne des scores d'attention pour interprétabilité directe
+- Schéma d'attention flexible selon configuration
+
+<div align="center">
+<img src="images/Interpretable Multi-Head Attention.png" alt="Multi-Head Attention" width="80%" style="max-width: 700px;">
+<br><em>Interpretable Multi-Head Attention : importance réelle des features</em>
+</div>
+
+##### **Feed-Forward Network & Normalisation**
+- Transformation non-linéaire classique
+- LayerNorm et connexions résiduelles
+
+#### 3. **Classification finale**
+Prédiction basée sur la représentation du token CLS.
+
+### 📊 Extraction de l'interprétabilité
+
+L'importance des features est extraite directement de la matrice d'attention CLS→features, permettant :
+- **Visualisations intuitives** : barplots, heatmaps
+- **Transparence des décisions** : identification des features influents
+- **Analyse des interactions** : comprendre les relations entre variables
+
+---
+
+## ⚡ Sparse FTT+
+
+### Principe
+
+Sparse FTT+ utilise l'attention sparse (`sparsemax`) au lieu de l'attention softmax standard.
+
+### Avantages
+
+| Aspect | Bénéfice |
+|--------|----------|
+| **Interactions** | Réduction du nombre d'interactions significatives |
+| **Performance** | Concentration sur les relations les plus pertinentes |
+| **Interprétabilité** | Identification explicite des features les plus influents |
+
+### Fonctionnement
+
+La fonction `sparsemax` produit des distributions d'attention :
+- **Strictement positives** sur un sous-ensemble restreint
+- **Nulles** ailleurs, éliminant le bruit
+
+---
+
+## 📁 Structure du code
 
 ```
-ftt_plus/
-    attention.py         # Attention sélective/interprétable
-    model.py             # Architecture FTT+ (tokenizer, CLS, blocs, head)
-    visualisation.py     # Visualisation (barplots, heatmaps)
+📦 ftt_plus/
+├── 📄 attention.py         # Attention sélective/interprétable
+├── 📄 model.py             # Architecture FTT+ complète
+└── 📄 visualisation.py     # Outils de visualisation
 
-sparse_ftt_plus/
-    attention.py         # Attention sparse/interprétable
-    model.py             # Architecture Sparse FTT+ (tokenizer, CLS, blocs, head)
-    visualisation.py     # Visualisation (barplots, heatmaps)
+📦 sparse_ftt_plus/
+├── 📄 attention.py         # Attention sparse/interprétable
+├── 📄 model.py             # Architecture Sparse FTT+
+└── 📄 visualisation.py     # Visualisations spécialisées
 ```
 
 ---
 
-## 5. Notes d'utilisation
+## ⚙️ Configuration
 
-- Pour changer le mode d'attention de FTT+, ajoutez dans la config :
-  ```python
-  ftt_plus_config = {
-      # ...autres paramètres...
-      'attention_mode': 'cls',  # ou 'hybrid', ou 'full'
-  }
-  ```
+### Paramétrage FTT+
+
+```python
+ftt_plus_config = {
+    # Architecture
+    'd_model': 256,
+    'n_heads': 8,
+    'n_layers': 6,
+    
+    # Mode d'attention
+    'attention_mode': 'hybrid',  # 'cls', 'hybrid', 'full'
+    
+    # Autres paramètres...
+}
+```
+
+### Modes d'attention détaillés
+
+- **`cls`** : Reproduction fidèle du FTT+ original
+- **`hybrid`** : **Recommandé** - Équilibre performance/interprétabilité  
+- **`full`** : Maximum d'interactions, plus coûteux
 
 ---
 
-## 6. Dépendances supplémentaires pour `sparse_ftt_plus`
+## 🔧 Installation
 
-Pour utiliser la version sparsemax de FTT+, installez la dépendance suivante :
+### Dépendances de base
+```bash
+pip install torch transformers numpy pandas matplotlib seaborn
+```
 
+### Pour Sparse FTT+
 ```bash
 pip install sparsemax
 ```
 
 ---
 
-## 7. Pourquoi cette étude ?
+## 🎯 Pourquoi cette étude ?
 
-- **Comprendre et expliquer les décisions des modèles tabulaires** : enjeu crucial en entreprise (banque, assurance, santé…).
-- **Allier performance et transparence** : lever le « black box effect » des réseaux profonds.
-- **Proposer des outils réutilisables et adaptables** : code modulaire, visualisations prêtes à l’emploi.
+### Enjeux actuels
 
----
+| Domaine | Problématique | Solution FTT+ |
+|---------|---------------|---------------|
+| **Entreprise** | Décisions opaques en finance/santé | Interprétabilité native |
+| **IA Responsable** | "Black box effect" | Transparence des modèles |
+| **Recherche** | Trade-off performance/explicabilité | Architecture optimisée |
 
-## 8. Références
+### Contributions
 
-- Vaswani, A., Shazeer, N., Parmar, N., et al. (2017). *Attention Is All You Need*. NeurIPS.
-- Isomura, T., Shimizu, R., & Goto, M. (2023). *Optimizing FT-Transformer: Sparse Attention for Improved Performance and Interpretability*.
-- Gorishniy, Y., Rubachev, I., Khrulkov, V., & Babenko, A. (2021). *Revisiting Deep Learning Models for Tabular Data*.
-- Devlin, J., et al. (2018). *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding*.
-
----
-
-## 9. Auteur
-
-Léonel VODOUNOU  
-FTT+ – Interprétabilité avancée pour données tabulaires  
-2025
+- **🔍 Transparence** : Mécanismes d'attention interprétables
+- **📈 Performance** : Architecture optimisée pour données tabulaires  
+- **🛠️ Réutilisabilité** : Code modulaire et visualisations prêtes
 
 ---
 
+## 📚 Références
+
+- **Vaswani, A., et al.** (2017). *Attention Is All You Need*. NeurIPS.
+- **Gorishniy, Y., et al.** (2021). *Revisiting Deep Learning Models for Tabular Data*.
+- **Isomura, T., et al.** (2023). *Optimizing FT-Transformer: Sparse Attention for Improved Performance*.
+- **Devlin, J., et al.** (2018). *BERT: Pre-training of Deep Bidirectional Transformers*.
+
 ---
+
+<div align="center">
+
+**🚀 FTT+ – Interprétabilité avancée pour données tabulaires**
+
+*Développé par **Léonel VODOUNOU** • 2025*
+
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](votre-repo-url)
+[![Documentation](https://img.shields.io/badge/Docs-Available-blue)](docs-url)
+
+</div>
