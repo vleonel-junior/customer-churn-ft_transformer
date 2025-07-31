@@ -108,11 +108,11 @@ class SelectiveAttention(nn.Module):
         cls_mask = cls_mask & ~diagonal_mask
         
         # Appliquer le masque
-        scores = scores.masked_fill(~cls_mask, float('-inf'))
+        scores = scores.masked_fill(~cls_mask, -1e9)
         
         # Appliquer le masque additionnel si fourni
         if mask is not None:
-            scores = scores.masked_fill(~mask, float('-inf'))
+            scores = scores.masked_fill(~mask, -1e9)
         
         # Sparsemax et dropout
         attention_weights = sparsemax(scores)
@@ -235,23 +235,23 @@ class InterpretableMultiHeadAttention(nn.Module):
                 cls_mask = cls_mask & ~diagonal_mask
                 
                 # Appliquer le masque
-                scores_h = scores_h.masked_fill(~cls_mask, float('-inf'))
+                scores_h = scores_h.masked_fill(~cls_mask, -1e9)
             elif self.attention_mode == 'full':
                 # Autoriser toute l'attention sauf diagonale
                 full_mask = ~torch.eye(seq_len, dtype=torch.bool, device=scores_h.device).unsqueeze(0)
-                scores_h = scores_h.masked_fill(~full_mask, float('-inf'))
+                scores_h = scores_h.masked_fill(~full_mask, -1e9)
             elif self.attention_mode == 'hybrid':
                 # Autoriser CLS<->features et features<->features (sauf diagonale)
                 hybrid_mask = torch.ones_like(scores_h, dtype=torch.bool)
                 diagonal_mask = torch.eye(seq_len, dtype=torch.bool, device=scores_h.device).unsqueeze(0)
                 hybrid_mask = hybrid_mask & ~diagonal_mask
-                scores_h = scores_h.masked_fill(~hybrid_mask, float('-inf'))
+                scores_h = scores_h.masked_fill(~hybrid_mask, -1e9)
             else:
                 raise ValueError(f"attention_mode inconnu: {self.attention_mode}")
             
             # Appliquer le masque additionnel si fourni
             if mask is not None:
-                scores_h = scores_h.masked_fill(~mask, float('-inf'))
+                scores_h = scores_h.masked_fill(~mask, -1e9)
             
             # Appliquer sparsemax pour cette tête (pour conserver la diversité des têtes et avoir une attention creuse)
             attention_h = sparsemax(scores_h)
