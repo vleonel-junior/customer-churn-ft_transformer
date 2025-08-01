@@ -1,6 +1,6 @@
 """
 Factory pour créer différents types d'embeddings numériques basé sur rtdl_num_embeddings.
-Sortie toujours: (batch_size, n_features, d_embedding)
+Sortie toujours: (batch_size, n_features, d_embedding).
 """
 
 import torch
