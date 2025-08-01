@@ -98,12 +98,10 @@ L'implémentation utilise la fonction `sparsemax` au lieu de `softmax` pour le c
 ftt_plus/
     attention.py         # Attention sélective/interprétable
     model.py             # Architecture FTT+ (tokenizer, CLS, blocs, head)
-    visualisation.py     # Visualisation (barplots, heatmaps)
 
 sparse_ftt_plus/
     attention.py         # Attention sparse/interprétable
     model.py             # Architecture Sparse FTT+ (tokenizer, CLS, blocs, head)
-    visualisation.py     # Visualisation (barplots, heatmaps)
 ```
 
 ---
