@@ -40,7 +40,7 @@ def objective(trial):
     min_delta = 1e-4
     embedding_type = trial.suggest_categorical(
         "embedding_type",
-        ["L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR", "P-LR-LR"]
+        ["P-LR"]
     )
 
     try:

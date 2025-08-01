@@ -33,9 +33,7 @@ def objective(trial):
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     num_embedding_type = trial.suggest_categorical(
         "num_embedding_type",
-        [
-            "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR", "P-LR-LR"
-        ]
+        ["P-LR"]
     )
     attention_n_heads = trial.suggest_categorical("attention_n_heads", [2, 4, 8, 16])
     d_embedding = trial.suggest_categorical("d_embedding", [16, 32, 64, 128])
