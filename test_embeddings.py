@@ -1,5 +1,5 @@
 """
-Test complet des embeddings numériques
+Test complet des embeddings numériques.
 Ce script teste différents types d'embeddings numériques pour s'assurer de leur bon fonctionnement.
 """
 
