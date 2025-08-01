@@ -9,6 +9,7 @@ import zero
 import rtdl_lib
 from rtdl_lib.modules import FTTransformer
 from num_embedding_factory import get_num_embedding
+from ftt_utils import make_baseline_with_n_heads
 import gc
 
 # --- Paramètres fixes ---
@@ -36,7 +37,7 @@ def objective(trial):
             "L", "LR", "Q", "T", "Q-LR", "T-LR", "P-LR", "P-LR-LR"
         ]
     )
-    n_heads = trial.suggest_categorical("n_heads", [2, 4, 8, 16])
+    attention_n_heads = trial.suggest_categorical("attention_n_heads", [2, 4, 8, 16])
     d_embedding = trial.suggest_categorical("d_embedding", [16, 32, 64, 128])
     n_layers = trial.suggest_int("n_layers", 2, 6)
     attention_dropout = trial.suggest_float("attention_dropout", 0.1, 0.3)
@@ -69,11 +70,12 @@ def objective(trial):
             )
 
             # Modèle FTTransformer sur le bon device
-            model = FTTransformer.make_baseline(
+            model = make_baseline_with_n_heads(
                 n_num_features=X['train'][0].shape[1],
                 cat_cardinalities=cat_cardinalities,
                 d_token=d_embedding,
                 n_blocks=n_layers,
+                attention_n_heads=attention_n_heads,
                 attention_dropout=attention_dropout,
                 ffn_d_hidden=d_embedding * 2,
                 ffn_dropout=ffn_dropout,
@@ -145,7 +147,7 @@ def objective(trial):
                 "lr": lr,
                 "weight_decay": weight_decay,
                 "num_embedding_type": num_embedding_type,
-                "n_heads": n_heads,
+                "attention_n_heads": attention_n_heads,
                 "d_embedding": d_embedding,
                 "n_layers": n_layers,
                 "attention_dropout": attention_dropout,
@@ -177,7 +179,7 @@ def objective(trial):
                 "lr": lr,
                 "weight_decay": weight_decay,
                 "num_embedding_type": num_embedding_type,
-                "n_heads": n_heads,
+                "attention_n_heads": attention_n_heads,
                 "d_embedding": d_embedding,
                 "n_layers": n_layers,
                 "attention_dropout": attention_dropout,

@@ -3,8 +3,10 @@ from rtdl_lib.modules import FTTransformer
 import zero
 from data.process_telecom_data import device, get_data
 from train_funct import train, val, evaluate
-import numpy as np 
-import time 
+from num_embedding_factory import get_num_embedding
+from ftt_utils import make_baseline_with_n_heads
+import numpy as np
+import time
 import torch
 import os
 
@@ -37,7 +39,7 @@ if __name__ == '__main__':
     # Modèle
     from num_embedding_factory import get_num_embedding
 
-    model = FTTransformer.make_baseline(
+    model = make_baseline_with_n_heads(
         n_num_features=X['train'][0].shape[1],
         cat_cardinalities=cat_cardinalities,
         d_token=128,
