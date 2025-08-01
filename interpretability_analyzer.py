@@ -91,11 +91,7 @@ class InterpretabilityAnalyzer:
         # 6. Sauvegarde des poids du modèle
         self._save_model(model_name, seed, model)
         
-        # 7. Sauvegarde locale si demandée (pour compatibilité)
-        if local_output_dir:
-            self._save_local(local_output_dir, training_results, performance_results, cls_importance, model)
-        
-        # 8. Résumé des fichiers sauvegardés
+        # 7. Résumé des fichiers sauvegardés
         self._print_summary(model_name, seed)
         
         return interpretability_results
@@ -181,16 +177,6 @@ class InterpretabilityAnalyzer:
         path = self.results_dir / 'best_models' / f'{model_name}_weights_seed_{seed}.pt'
         torch.save(model.state_dict(), path)
     
-    def _save_local(self, output_dir: str, training_results: Dict, performance_results: Dict, cls_importance: Dict, model: torch.nn.Module):
-        """Sauvegarde locale (compatibilité)."""
-        data = {
-            **training_results, 
-            'test_performance': performance_results['test'], 
-            'val_performance': performance_results['val'], 
-            'cls_importance': cls_importance
-        }
-        np.save(f'{output_dir}/training_results.npy', data)
-        torch.save(model.state_dict(), f'{output_dir}/best_model.pt')
     
     def _print_summary(self, model_name: str, seed: int):
         """Affiche un résumé des fichiers sauvegardés."""
