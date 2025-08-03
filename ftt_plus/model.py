@@ -403,10 +403,11 @@ class InterpretableFTTPlus(nn.Module):
             return logits
     
     def get_cls_importance(
-        self, 
-        x_num: Optional[Tensor], 
-        x_cat: Optional[Tensor], 
-        feature_names: Optional[List[str]] = None
+        self,
+        x_num: Optional[Tensor],
+        x_cat: Optional[Tensor],
+        feature_names: Optional[List[str]] = None,
+        average_layers: bool = True
     ) -> Dict[str, float]:
         """Calcule l'importance des features basée sur l'attention CLS.
         
@@ -415,8 +416,9 @@ class InterpretableFTTPlus(nn.Module):
         
         Args:
             x_num: features numériques (batch unique ou batch)
-            x_cat: features catégorielles (batch unique ou batch)  
+            x_cat: features catégorielles (batch unique ou batch)
             feature_names: noms des features pour labelliser les résultats
+            average_layers: si True, moyenne sur toutes les couches; sinon dernière couche seulement
             
         Returns:
             dict: mapping feature_name -> importance_score
@@ -424,16 +426,41 @@ class InterpretableFTTPlus(nn.Module):
         Example:
             .. testcode::
             
-                importance = model.get_cls_importance(x_num, x_cat, 
-                    ['feature_1', 'feature_2', 'feature_3'])
-                print(f"Feature la plus importante: {max(importance, key=importance.get)}")
+                # Importance moyennée sur toutes les couches (recommandé)
+                importance_all = model.get_cls_importance(x_num, x_cat,
+                    ['feature_1', 'feature_2', 'feature_3'], average_layers=True)
+                
+                # Importance de la dernière couche seulement
+                importance_last = model.get_cls_importance(x_num, x_cat,
+                    ['feature_1', 'feature_2', 'feature_3'], average_layers=False)
+                
+                print(f"Feature la plus importante (toutes couches): {max(importance_all, key=importance_all.get)}")
         """
         with torch.no_grad():
-            _, last_attention = self.forward(x_num, x_cat, return_attention=True)
-        
-        # Moyenner sur le batch et extraire les scores CLS -> features
-        avg_attention = last_attention.mean(0)  # (seq_len, seq_len)
-        importance_scores = avg_attention[0, 1:].cpu().numpy()  # Exclure CLS->CLS
+            if average_layers:
+                # Moyenner sur TOUTES les têtes et TOUTES les couches
+                
+                # Tokenisation des features
+                x = self.feature_tokenizer(x_num, x_cat)
+                x = self.cls_token(x)
+                
+                # Collecter l'attention de toutes les couches
+                all_layer_attentions = []
+                for block in self.blocks:
+                    x, attention_weights = block(x)
+                    all_layer_attentions.append(attention_weights)
+                
+                # Moyenner sur toutes les couches ET le batch
+                # Formule: p_i = (1/(H×L)) × Σ_h Σ_l p_i^{hl}
+                stacked_attentions = torch.stack(all_layer_attentions, dim=0)  # (n_layers, batch, seq, seq)
+                avg_attention = stacked_attentions.mean(dim=[0, 1])  # Moyenne sur layers + batch
+                importance_scores = avg_attention[0, 1:].cpu().numpy()  # CLS -> features
+            else:
+                # Dernière couche seulement
+
+                _, last_attention = self.forward(x_num, x_cat, return_attention=True)
+                avg_attention = last_attention.mean(0)  # (seq_len, seq_len)
+                importance_scores = avg_attention[0, 1:].cpu().numpy()  # Exclure CLS->CLS
         
         if feature_names is not None:
             return dict(zip(feature_names, importance_scores))
