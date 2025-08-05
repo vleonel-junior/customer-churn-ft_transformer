@@ -211,7 +211,6 @@ if __name__ == "__main__":
 
     pruner = optuna.pruners.MedianPruner(
         n_startup_trials=5,
-        n_warmup_steps=10,
         interval_steps=5
     )
 

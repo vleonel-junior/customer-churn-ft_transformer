@@ -85,9 +85,6 @@ def objective(trial):
             model.to(device)
 
             optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode='min', patience=5, factor=0.5, verbose=False
-            )
             loss_fn = torch.nn.BCEWithLogitsLoss()
 
             best_val_loss = float('inf')
@@ -104,8 +101,6 @@ def objective(trial):
                 loss_val = val(epoch, model, X, y, val_loader, loss_fn)
                 train_loss_list.append(loss_train)
                 val_loss_list.append(loss_val)
-
-                scheduler.step(loss_val)
 
                 if epoch not in reported_steps:
                     trial.report(loss_val, epoch)
@@ -215,7 +210,6 @@ if __name__ == "__main__":
 
     pruner = optuna.pruners.MedianPruner(
         n_startup_trials=5,
-        n_warmup_steps=10,
         interval_steps=5
     )
 
