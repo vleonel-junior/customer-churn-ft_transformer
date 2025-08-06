@@ -298,7 +298,7 @@ def main():
         training_results=training_results,
         performance_results=performance_results,
         feature_names=feature_names,
-        # Suppression de dataset_name car non supporté par l'ancienne version
+        task_type='regression',  # Spécifier le type de tâche
         results_base_dir="results"
     )
     

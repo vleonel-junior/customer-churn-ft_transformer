@@ -59,7 +59,7 @@ def regression_performance_dict(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[
         'rmse': float(rmse),
         'mae': float(mae),
         'r2': float(r2),
-        'mape': float(mape)
+        'mape': float(mape) 
     }
 
 

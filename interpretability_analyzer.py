@@ -43,6 +43,7 @@ class InterpretabilityAnalyzer:
         training_results: Dict[str, Any],
         performance_results: Dict[str, List[float]],
         feature_names: List[str],
+        task_type: str = 'classification',
         local_output_dir: Optional[str] = None
     ) -> Dict[str, Any]:
         """
@@ -58,6 +59,7 @@ class InterpretabilityAnalyzer:
             training_results: Résultats de l'entraînement.
             performance_results: Résultats de performance (val, test).
             feature_names: Liste des noms de features.
+            task_type: Type de tâche ('classification' ou 'regression').
             local_output_dir: Répertoire de sauvegarde locale (optionnel).
             
         Returns:
@@ -66,7 +68,10 @@ class InterpretabilityAnalyzer:
         if not feature_names:
             raise ValueError("feature_names est obligatoire")
         
-        print("\n=== Analyse d'interprétabilité ===")
+        if task_type not in ['classification', 'regression']:
+            raise ValueError("task_type doit être 'classification' ou 'regression'")
+        
+        print(f"\n=== Analyse d'interprétabilité ({task_type}) ===")
         
         # 1. Calcul de l'importance des features via le token CLS
         model.eval()
@@ -80,7 +85,7 @@ class InterpretabilityAnalyzer:
             print(f"  {i:2d}. {feature:<20}: {score:.4f}")
         
         # 3. Sauvegarde des métriques de performance
-        self._save_metrics(model_name, seed, model_config, training_results, performance_results, model)
+        self._save_metrics(model_name, seed, model_config, training_results, performance_results, model, task_type)
         
         # 4. Sauvegarde des résultats bruts d'interprétabilité
         interpretability_results = self._save_interpretability(model_name, seed, feature_names, cls_importance, sorted_importance)
@@ -96,13 +101,19 @@ class InterpretabilityAnalyzer:
         
         return interpretability_results
     
-    def _save_metrics(self, model_name: str, seed: int, model_config: Dict, training_results: Dict, performance_results: Dict, model: torch.nn.Module):
-        """Sauvegarde les métriques de performance."""
-        # Définition des noms de métriques selon la fonction performance utilisée
-        metric_names = [
-            "roc_auc", "pr_auc", "accuracy", "balanced_accuracy", "mcc",
-            "sensitivity", "specificity", "precision", "f1", "cohen_kappa"
-        ]
+    def _save_metrics(self, model_name: str, seed: int, model_config: Dict, training_results: Dict, performance_results: Dict, model: torch.nn.Module, task_type: str):
+        """Sauvegarde les métriques de performance selon le type de tâche."""
+        
+        # Définition des noms de métriques selon le type de tâche
+        if task_type == 'classification':
+            metric_names = [
+                "roc_auc", "pr_auc", "accuracy", "balanced_accuracy", "mcc",
+                "sensitivity", "specificity", "precision", "f1", "cohen_kappa"
+            ]
+        else:  # regression
+            metric_names = [
+                "mse", "rmse", "mae", "r2", "mape"
+            ]
         
         def to_named_dict(values):
             if isinstance(values, dict):
@@ -112,6 +123,7 @@ class InterpretabilityAnalyzer:
         data = {
             'model_name': model_name,
             'seed': seed,
+            'task_type': task_type,
             'model_config': model_config,
             'training': {**training_results, 'n_parameters': sum(p.numel() for p in model.parameters())},
             'performance': {
@@ -198,6 +210,7 @@ def analyze_interpretability(
     training_results: Dict[str, Any],
     performance_results: Dict[str, List[float]],
     feature_names: List[str],
+    task_type: Optional[str] = None,
     local_output_dir: Optional[str] = None,
     results_base_dir: str = 'results'
 ) -> Dict[str, Any]:
@@ -214,11 +227,18 @@ def analyze_interpretability(
         training_results: Résultats de l'entraînement.
         performance_results: Résultats de performance (val, test).
         feature_names: Liste des noms de features.
+        task_type: Type de tâche ('classification', 'regression', ou None pour comportement par défaut).
         local_output_dir: Répertoire de sauvegarde locale (optionnel).
         results_base_dir: Répertoire de base pour les résultats.
         
     Returns:
         dict: Résultats bruts de l'analyse d'interprétabilité.
     """
+    
+    # Si task_type n'est pas spécifié, utiliser 'classification' par défaut
+    if task_type is None:
+        task_type = 'classification'
+        print(f"task_type non spécifié, utilisation de 'classification' par défaut")
+    
     analyzer = InterpretabilityAnalyzer(results_base_dir)
-    return analyzer.analyze_and_save(model, X, y, model_name, seed, model_config, training_results, performance_results, feature_names, local_output_dir)
+    return analyzer.analyze_and_save(model, X, y, model_name, seed, model_config, training_results, performance_results, feature_names, task_type, local_output_dir)
