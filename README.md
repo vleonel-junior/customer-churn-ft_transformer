@@ -174,3 +174,13 @@ pip install sparsemax
 - Martins, A. F. T., & Astudillo, R. F. (2016). *From Softmax to Sparsemax: A Sparse Model of Attention and Multi-Label Classification*.
 - Lim, B., Arik, S. Ö., Loeff, N., & Pfister, T. (2021). *Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting*.
 - Devlin, J., et al. (2018). *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding*.
+
+---
+
+## Auteur
+
+**Léonel VODOUNOU**  
+FTT+ – Interprétabilité avancée pour données tabulaires  
+2025
+
+---
