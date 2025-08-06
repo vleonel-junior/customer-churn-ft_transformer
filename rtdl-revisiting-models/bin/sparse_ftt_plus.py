@@ -8,7 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.nn.init as nn_init
 import zero
 from torch import Tensor
 
@@ -17,23 +16,27 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 import lib
 from sparse_ftt_plus.attention import InterpretableMultiHeadAttention
-from rtdl_lib.modules import FeatureTokenizer, CLSToken, _make_nn_module
+from num_embedding_factory import get_num_embedding
 
 ModuleType = ty.Union[str, ty.Callable[..., nn.Module]]
 
 
 # %%
 class SparseFTTPlus(nn.Module):
-    """Sparse FT-Transformer Plus avec attention interprétable et sparsemax.
+    """Sparse FT-Transformer Plus avec attention interprétable et embeddings P-LR.
     
-    Cette implémentation combine l'architecture FT-Transformer de RTDL avec les
-    innovations FTT+ d'Isomura et al. pour une attention sélective et interprétable.
+    Cette implémentation combine l'architecture FT-Transformer de RTDL avec
+    l'attention sparsemax et les embeddings P-LR avancés pour améliorer les
+    performances et l'interprétabilité sur les données tabulaires.
     
-    Le modèle gère automatiquement la classification et la régression selon le dataset.
+    Le modèle utilise automatiquement les embeddings P-LR pour les variables continues
+    et gère la classification et la régression selon le dataset.
     
     References:
     - Gorishniy et al. "Revisiting Deep Learning Models for Tabular Data" (NeurIPS 2021)
-    - Isomura et al. "Optimizing FT-Transformer: Sparse Attention for Improved Performance and Interpretability" (2023)
+    - Gorishniy et al. "On Embeddings for Numerical Features in Tabular Deep Learning" (ICLR 2022)
+    - Martins & Astudillo "From Softmax to Sparsemax: A Sparse Model of Attention and Multi-Label Classification" (ICML 2016)
+    - Lim et al. "Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting" (International Journal of Forecasting 2021)
     """
 
     def __init__(
@@ -64,7 +67,10 @@ class SparseFTTPlus(nn.Module):
     ) -> None:
         super().__init__()
         
-        # Feature Tokenizer RTDL pour l'embedding optimal
+        # Import des modules RTDL nécessaires
+        from rtdl_lib.modules import FeatureTokenizer, CLSToken, _make_nn_module
+        
+        # Feature Tokenizer RTDL standard (sera modifié après)
         self.feature_tokenizer = FeatureTokenizer(
             n_num_features=d_numerical,
             cat_cardinalities=categories or [],
@@ -98,7 +104,6 @@ class SparseFTTPlus(nn.Module):
         self.residual_dropout = residual_dropout
         
         # Normalisation finale et tête de prédiction
-        from rtdl_lib.modules import Transformer
         self.last_normalization = (
             _make_nn_module(head_normalization, d_token) 
             if prenormalization else None
@@ -123,6 +128,8 @@ class SparseFTTPlus(nn.Module):
     ) -> nn.ModuleDict:
         """Crée un bloc Transformer avec attention interprétable."""
         
+        from rtdl_lib.modules import _make_nn_module, Transformer
+        
         block = nn.ModuleDict({
             'attention': InterpretableMultiHeadAttention(
                 d_model=d_token,
@@ -138,7 +145,6 @@ class SparseFTTPlus(nn.Module):
             block['norm0'] = _make_nn_module(attention_normalization, d_token)
         
         # FFN utilisant l'implémentation RTDL
-        from rtdl_lib.modules import Transformer
         block['ffn'] = Transformer.FFN(
             d_token=d_token,
             d_hidden=ffn_d_hidden,
@@ -176,7 +182,7 @@ class SparseFTTPlus(nn.Module):
         
         return x
 
-    def forward(self, x_num: Tensor, x_cat: ty.Optional[Tensor]) -> Tensor:
+    def forward(self, x_num: ty.Optional[Tensor], x_cat: ty.Optional[Tensor]) -> Tensor:
         """Forward pass unifié pour classification et régression."""
         # Tokenisation des features
         x = self.feature_tokenizer(x_num, x_cat)
@@ -294,6 +300,31 @@ if __name__ == "__main__":
         d_out=D.info['n_classes'] if D.is_multiclass else 1,
         **args['model'],
     ).to(device)
+    
+    # ==========================================
+    # INTEGRATION DES EMBEDDINGS P-LR AVANCES
+    # ==========================================
+    if X_num is not None and model.feature_tokenizer.num_tokenizer is not None:
+        print("Intégration des embeddings P-LR pour les variables continues...")
+        
+        # Type d'embedding à utiliser (P-LR par défaut)
+        embedding_type = args['model'].get('embedding_type', 'P-LR')
+        print(f"Type d'embedding numérique: {embedding_type}")
+
+        # Forcer les tenseurs sur CPU pour éviter le warning rtdl_num_embeddings
+        X_train_cpu = X_num['train'].cpu()
+        
+        # Créer l'embedding P-LR avancé
+        num_embedding = get_num_embedding(
+            embedding_type=embedding_type,
+            X_train=X_train_cpu,
+            d_embedding=args['model']['d_token'],
+            y_train=Y['train'] if embedding_type in ("T", "T-L", "T-LR", "T-LR-LR") else None
+        )
+        
+        # Remplacer l'embedding numérique par défaut
+        model.feature_tokenizer.num_tokenizer = num_embedding
+        print(f"Embedding numérique remplacé par {embedding_type}")
     
     if torch.cuda.device_count() > 1:  # type: ignore[code]
         print('Using nn.DataParallel')

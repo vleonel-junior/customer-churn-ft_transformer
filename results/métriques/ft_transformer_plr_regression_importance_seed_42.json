@@ -1,0 +1,58 @@
+{
+  "model_name": "ft_transformer_plr_regression",
+  "seed": 42,
+  "feature_names": [
+    "MedInc",
+    "HouseAge",
+    "AveRooms",
+    "AveBedrms",
+    "Population",
+    "AveOccup",
+    "Latitude",
+    "Longitude"
+  ],
+  "cls_importance": {
+    "MedInc": 0.11819364130496979,
+    "HouseAge": 0.10593312233686447,
+    "AveRooms": 0.10340845584869385,
+    "AveBedrms": 0.10868729650974274,
+    "Population": 0.10610133409500122,
+    "AveOccup": 0.12269357591867447,
+    "Latitude": 0.11592049151659012,
+    "Longitude": 0.12006086111068726
+  },
+  "top_features": [
+    {
+      "name": "AveOccup",
+      "importance": 0.12269357591867447
+    },
+    {
+      "name": "Longitude",
+      "importance": 0.12006086111068726
+    },
+    {
+      "name": "MedInc",
+      "importance": 0.11819364130496979
+    },
+    {
+      "name": "Latitude",
+      "importance": 0.11592049151659012
+    },
+    {
+      "name": "AveBedrms",
+      "importance": 0.10868729650974274
+    },
+    {
+      "name": "Population",
+      "importance": 0.10610133409500122
+    },
+    {
+      "name": "HouseAge",
+      "importance": 0.10593312233686447
+    },
+    {
+      "name": "AveRooms",
+      "importance": 0.10340845584869385
+    }
+  ]
+}

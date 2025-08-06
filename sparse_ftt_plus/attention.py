@@ -9,7 +9,7 @@ Ce module implémente plusieurs schémas d'attention adaptés aux données tabul
 Cette flexibilité permet d'explorer l'impact des interactions entre features sur la performance
 et l'interprétabilité du modèle, au-delà du schéma FTT+ original.
 
-Principe fondamental (Isomura et al.):
+Principe fondamental :
 ------------------------------------
 "Les relations entre variables d'entrée et de sortie dans les données tabulaires
 sont généralement moins complexes que dans les données non structurées. Une attention

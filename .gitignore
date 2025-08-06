@@ -69,3 +69,7 @@ Desktop.ini
 
 # PyCharm
 .idea/
+
+# RTDL datasets (too large for git - 4GB)
+rtdl-revisiting-models/data/
+*.tar.gz

@@ -3,14 +3,16 @@ FTT+ Interprétable pour Régression - Modèle optimisé inspiré de RTDL avec S
 
 Cette implémentation combine:
 1. L'architecture robuste de RTDL
-2. L'attention sélective FTT+ d'Isomura et al.
+2. L'attention sélective sparse avec sparsemax
 3. L'interprétabilité multi-têtes inspirée du TFT
 4. L'utilisation de sparsemax pour une attention plus creuse et interprétable
 5. Adaptation spécifique pour les tâches de régression
 
 Références:
     * [gorishniy2021revisiting] Yury Gorishniy, Ivan Rubachev, Valentin Khrulkov, Artem Babenko, "Revisiting Deep Learning Models for Tabular Data", 2021
-    * [isomura2023optimizing] Tokimasa Isomura, Ryotaro Shimizu, Masayuki Goto, "Optimizing FT-Transformer: Sparse Attention for Improved Performance and Interpretability", 2023
+    * [gorishniy2021embeddings] Yury Gorishniy, Ivan Rubachev, Artem Babenko, "On Embeddings for Numerical Features in Tabular Deep Learning"
+    * [martins2016sparsemax] André F. T. Martins, Ramón F. Astudillo, "From Softmax to Sparsemax: A Sparse Model of Attention and Multi-Label Classification"
+    * [lim2021temporal] Bryan Lim, Sercan Ö. Arik, Nicolas Loeff, Tomas Pfister, "Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting"
 """
 
 import torch
