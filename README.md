@@ -24,7 +24,7 @@ L'objectif : concilier **performance** et **interprétabilité** sur des donnée
 ### 2.1 Schéma global du forward pass
 
 <div align="center">
-  <img src="images/FT_Transformer architecture.png" alt="Architecture globale du FT-Transformer appliqué aux données tabulaires" width="600"/>
+  <img src="images/FT_Transformer architecture.png" alt="Architecture globale du FT-Transformer appliqué aux données tabulaires" width="700"/>
   <br>
   <b>Architecture globale du FT-Transformer appliqué aux données tabulaires</b>
 </div>
@@ -38,7 +38,7 @@ L'objectif : concilier **performance** et **interprétabilité** sur des donnée
 Le `FeatureTokenizer` encode chaque variable (numérique/catégorielle) en vecteur dense.
 
 <div align="center">
-  <img src="images/Illustration%20d'un%20Feature%20Tokenizer.png" alt="Illustration du processus de tokenisation des variables brutes en vecteurs denses" width="600"/>
+  <img src="images/Illustration%20d'un%20Feature%20Tokenizer.png" alt="Illustration du processus de tokenisation des variables brutes en vecteurs denses" width="700"/>
   <br>
   <b>Illustration du processus de tokenisation des variables brutes en vecteurs denses</b>
 </div>
@@ -60,7 +60,7 @@ Chaque bloc applique successivement :
 - Moyenne des scores d'attention sur les têtes pour interprétabilité directe
 
 <div align="center">
-  <img src="images/Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+" width="600"/>
+  <img src="images/Scaled Dot-Product Attention.png" alt="Scaled Dot-Product Attention adapté FTT+" width="300"/>
   <br>
   <b>Scaled Dot-Product Attention : les interactions autorisées dépendent du mode choisi (cls, hybrid, full)</b>
 </div>
@@ -68,7 +68,7 @@ Chaque bloc applique successivement :
 <br>
 
 <div align="center">
-  <img src="images/Interpretable Multi-Head Attention.png" alt="Illustration de l'Interpretable Multi-Head Attention" width="600"/>
+  <img src="images/Interpretable Multi-Head Attention.png" alt="Illustration de l'Interpretable Multi-Head Attention" width="700"/>
   <br>
   <b>Interpretable Multi-Head Attention : la moyenne des scores d'attention reflète l'importance réelle de chaque feature</b>
 </div>
@@ -84,7 +84,7 @@ Chaque bloc applique successivement :
 - LayerNorm, skip connections
 
 <div align="center">
-  <img src="images/One Transformer layer.png" alt="Vue d'ensemble d'un bloc Transformer adapté aux données tabulaires (FTT+)" width="600"/>
+  <img src="images/One Transformer layer.png" alt="Vue d'ensemble d'un bloc Transformer adapté aux données tabulaires (FTT+)" width="300"/>
   <br>
   <b>Vue d'ensemble d'un bloc Transformer adapté aux données tabulaires (FTT+)</b>
 </div>
