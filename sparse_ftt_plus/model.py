@@ -410,7 +410,8 @@ class InterpretableFTTPlus(nn.Module):
         x_num: Optional[Tensor],
         x_cat: Optional[Tensor],
         feature_names: Optional[List[str]] = None,
-        average_layers: bool = True
+        average_layers: bool = True,
+        **kwargs  # <-- Ajout ici pour supporter tout argument supplémentaire
     ) -> Dict[str, float]:
         """Calcule l'importance des features basée sur l'attention CLS.
         

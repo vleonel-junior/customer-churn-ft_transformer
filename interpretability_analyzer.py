@@ -212,7 +212,8 @@ def analyze_interpretability(
     feature_names: List[str],
     task_type: Optional[str] = None,
     local_output_dir: Optional[str] = None,
-    results_base_dir: str = 'results'
+    results_base_dir: str = 'results',
+    average_layers: bool = True
 ) -> Dict[str, Any]:
     """
     Fonction d'analyse d'interprétabilité générique et modulaire.
@@ -230,6 +231,7 @@ def analyze_interpretability(
         task_type: Type de tâche ('classification', 'regression', ou None pour comportement par défaut).
         local_output_dir: Répertoire de sauvegarde locale (optionnel).
         results_base_dir: Répertoire de base pour les résultats.
+        average_layers: Si True, importance moyennée sur toutes les couches; sinon dernière couche seulement.
         
     Returns:
         dict: Résultats bruts de l'analyse d'interprétabilité.
@@ -239,6 +241,9 @@ def analyze_interpretability(
     if task_type is None:
         task_type = 'classification'
         print(f"task_type non spécifié, utilisation de 'classification' par défaut")
-    
+
     analyzer = InterpretabilityAnalyzer(results_base_dir)
-    return analyzer.analyze_and_save(model, X, y, model_name, seed, model_config, training_results, performance_results, feature_names, task_type, local_output_dir)
+    return analyzer.analyze_and_save(
+        model, X, y, model_name, seed, model_config, training_results,
+        performance_results, feature_names, task_type, local_output_dir
+    )

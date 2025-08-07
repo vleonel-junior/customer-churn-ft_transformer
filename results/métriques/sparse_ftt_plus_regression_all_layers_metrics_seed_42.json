@@ -1,0 +1,48 @@
+{
+  "model_name": "sparse_ftt_plus_regression_all_layers",
+  "seed": 42,
+  "task_type": "regression",
+  "model_config": {
+    "d_token": 64,
+    "n_blocks": 3,
+    "n_heads": 8,
+    "attention_dropout": 0.1,
+    "ffn_d_hidden": 256,
+    "ffn_dropout": 0.1,
+    "residual_dropout": 0.0,
+    "d_out": 1,
+    "attention_mode": "hybrid"
+  },
+  "training": {
+    "train_losses": [
+      0.7363895773887634,
+      0.450700066591564,
+      0.36463801667355655
+    ],
+    "val_losses": [
+      0.49300386355473447,
+      0.3604526542700254,
+      0.2903849001114185
+    ],
+    "best_epoch": 2,
+    "best_val_loss": 0.2903849001114185,
+    "total_epochs": 3,
+    "n_parameters": 201153
+  },
+  "performance": {
+    "val": {
+      "mse": 0.39192116260528564,
+      "rmse": 0.6260360713291891,
+      "mae": 0.43648502230644226,
+      "r2": 0.6980721950531006,
+      "mape": 23.503198623657227
+    },
+    "test": {
+      "mse": 0.37587404251098633,
+      "rmse": 0.6130856730596356,
+      "mae": 0.43530991673469543,
+      "r2": 0.7275748252868652,
+      "mape": 23.86922264099121
+    }
+  }
+}

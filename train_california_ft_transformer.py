@@ -33,7 +33,6 @@ class Tokenizer(nn.Module):
         nn_init.kaiming_uniform_(self.weight, a=math.sqrt(5))
         if self.bias is not None:
             nn_init.kaiming_uniform_(self.bias, a=math.sqrt(5))
-        self.num_tokenizer = None  # Ajout pour support embedding custom
 
     @property
     def n_tokens(self) -> int:
@@ -42,21 +41,11 @@ class Tokenizer(nn.Module):
     def forward(self, x_num: Tensor, x_cat: Optional[Tensor]) -> Tensor:
         x_some = x_num if x_cat is None else x_cat
         assert x_some is not None
-        if self.num_tokenizer is not None:
-            # Utilise l'embedding P-LR
-            x_num = self.num_tokenizer(x_num)
-            # x_num shape: (batch, n_features, d_token)
-            # On ajoute le token [CLS] (zeros)
-            batch_size = x_num.shape[0]
-            cls_token = torch.zeros(batch_size, 1, x_num.shape[2], device=x_num.device)
-            x_num = torch.cat([cls_token, x_num], dim=1)
-            x = x_num
-        else:
-            x_num = torch.cat(
-                [torch.ones(len(x_some), 1, device=x_some.device)] + ([] if x_num is None else [x_num]),
-                dim=1,
-            )
-            x = self.weight[None] * x_num[:, :, None]
+        x_num = torch.cat(
+            [torch.ones(len(x_some), 1, device=x_some.device)] + ([] if x_num is None else [x_num]),
+            dim=1,
+        )
+        x = self.weight[None] * x_num[:, :, None]
         if x_cat is not None:
             x = torch.cat(
                 [x, self.category_embeddings(x_cat + self.category_offsets[None])],
@@ -84,6 +73,12 @@ class MultiheadAttention(nn.Module):
         self.W_out = nn.Linear(d, d) if n_heads > 1 else None
         self.n_heads = n_heads
         self.dropout = nn.Dropout(dropout) if dropout else None
+        for m in [self.W_q, self.W_k, self.W_v]:
+            if initialization == 'xavier' and (n_heads > 1 or m is not self.W_v):
+                nn_init.xavier_uniform_(m.weight, gain=1 / math.sqrt(2))
+            nn_init.zeros_(m.bias)
+        if self.W_out is not None:
+            nn_init.zeros_(self.W_out.bias)
 
     def _reshape(self, x: Tensor) -> Tensor:
         batch_size, n_tokens, d = x.shape
@@ -272,7 +267,7 @@ y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
 y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
 
 # =========================
-# Initialisation du modèle FT-Transformer avec embedding P-LR
+# Initialisation du modèle FT-Transformer
 # =========================
 model = Transformer(
     d_numerical=X_train.shape[1],
@@ -292,15 +287,6 @@ model = Transformer(
     kv_compression_sharing=None,
     d_out=1,
 )
-
-# Ajout de l'embedding P-LR pour les variables continues
-from num_embedding_factory import get_num_embedding
-num_embedding = get_num_embedding(
-    embedding_type="P-LR",
-    X_train=X_train,
-    d_embedding=192
-)
-model.tokenizer.num_tokenizer = num_embedding
 
 # =========================
 # Hook pour attention maps

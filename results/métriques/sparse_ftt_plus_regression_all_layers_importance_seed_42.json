@@ -1,0 +1,58 @@
+{
+  "model_name": "sparse_ftt_plus_regression_all_layers",
+  "seed": 42,
+  "feature_names": [
+    "MedInc",
+    "HouseAge",
+    "AveRooms",
+    "AveBedrms",
+    "Population",
+    "AveOccup",
+    "Latitude",
+    "Longitude"
+  ],
+  "cls_importance": {
+    "MedInc": 0.1053197830915451,
+    "HouseAge": 0.13241642713546753,
+    "AveRooms": 0.0923018604516983,
+    "AveBedrms": 0.1618327796459198,
+    "Population": 0.13443481922149658,
+    "AveOccup": 0.11650153249502182,
+    "Latitude": 0.12004617601633072,
+    "Longitude": 0.13714662194252014
+  },
+  "top_features": [
+    {
+      "name": "AveBedrms",
+      "importance": 0.1618327796459198
+    },
+    {
+      "name": "Longitude",
+      "importance": 0.13714662194252014
+    },
+    {
+      "name": "Population",
+      "importance": 0.13443481922149658
+    },
+    {
+      "name": "HouseAge",
+      "importance": 0.13241642713546753
+    },
+    {
+      "name": "Latitude",
+      "importance": 0.12004617601633072
+    },
+    {
+      "name": "AveOccup",
+      "importance": 0.11650153249502182
+    },
+    {
+      "name": "MedInc",
+      "importance": 0.1053197830915451
+    },
+    {
+      "name": "AveRooms",
+      "importance": 0.0923018604516983
+    }
+  ]
+}
